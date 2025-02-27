@@ -49,7 +49,7 @@ solana balance
 
 Perform a basic transfer action:
 ```sh
-solana transfer {{pub-key}} 1
+solana transfer {{identity}} 1
 ```
 
 Monitor `msg!()` output from on-chain programs:
