@@ -30,9 +30,8 @@ async function callSmartContract() {
   // ✅ Send transaction
   const signature = await sendAndConfirmTransaction(connection, transaction, [keypair]);
   console.log("✅ Transaction Confirmed! Signature:", signature);
+  console.log(`https://explorer.solana.com/tx/${signature}?cluster=custom`);
 }
 
 // 🔹 Run the function
 callSmartContract().catch(console.error);
-
-// https://explorer.solana.com/tx/23ZsHo3ZB2CDUcd6FYujTVxpfcjSY9t5YsCJZ94vAJmNfzoWf7ZU1wZtCKoT6PyDXzzEagHmvY1ijHCeSposv5qq?cluster=custom
