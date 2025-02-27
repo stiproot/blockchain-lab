@@ -1,6 +1,11 @@
 # blockchain-lab
 Personal laboratory for experimenting with blockchains.
 
+# Concepts
+- [NFTs](.docs/NFTS.md)
+- [Smart Contracts](.docs/SMART_CONTRACTS.md)
+
+# Setting up a bockchain cluster locally
 Install Solana CLI:
 ```sh
 sh -c "$(curl -sSfL https://release.anza.xyz/v2.2.0/install)"
@@ -61,4 +66,5 @@ NOTE: This command needs to be running when the target transaction is executed. 
 
 # Resources
 - https://docs.anza.xyz/cli/install
+- https://docs.anza.xyz/cli/examples/test-validator
 - https://solana.com/developers/guides/getstarted/local-rust-hello-world
