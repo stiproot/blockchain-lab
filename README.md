@@ -37,13 +37,15 @@ Generate a new keypair:
 solana-keygen new -o ~/.config/solana/id.json
 ```
 
+Airdrop an initial amount:
+```sh
+solana airdrop 10
+```
+
 Check the wallet balance:
 ```sh
 solana balance
 ```
-NOTE: Error: No such file or directory (os error 2) means that the default wallet does not yet exist. 
-Create it with `solana-keygen new`.
-NOTE: If the wallet has a zero SOL balance, airdrop some localnet SOL with `solana airdrop 10`
 
 Perform a basic transfer action:
 ```sh
