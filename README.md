@@ -5,6 +5,8 @@ Personal laboratory for experimenting with blockchains.
 - [NFTs](.docs/NFTS.md)
 - [Smart Contracts](.docs/SMART_CONTRACTS.md)
 
+---
+
 # Setting up a bockchain cluster locally
 Install Solana CLI:
 ```sh
@@ -63,6 +65,17 @@ solana logs
 ```
 NOTE: This command needs to be running when the target transaction is executed. Run it in its own terminal
 
+---
+
+# Deploy Smart Contract 
+Refer to [hello_world/README.md](hello_world/README.md).
+
+---
+
+# Use the Web3 Client
+Refer to [simple-client/README.md](simple-client/README.md).
+
+---
 
 # Resources
 - https://docs.anza.xyz/cli/install

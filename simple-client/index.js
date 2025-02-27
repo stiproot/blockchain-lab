@@ -3,7 +3,7 @@ import * as fs from "fs";
 
 // 🔹 Load your keypair (generated from solana-cli)
 const keypair = Keypair.fromSecretKey(
-  new Uint8Array(JSON.parse(fs.readFileSync("/Users/simon.stipcich/.config/solana/id.json", "utf8")))
+  new Uint8Array(JSON.parse(fs.readFileSync("~/.config/solana/id.json", "utf8")))
 );
 
 // 🔹 Define your smart contract (Program) Public Key
