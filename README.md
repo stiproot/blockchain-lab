@@ -4,6 +4,7 @@ Personal laboratory for experimenting with blockchains.
 # Concepts
 - [NFTs](.docs/NFTS.md)
 - [Smart Contracts](.docs/SMART_CONTRACTS.md)
+- [Transactions](.docs/TRANSACTIONS.md)
 
 ---
 
@@ -81,3 +82,6 @@ Refer to [simple-client/README.md](simple-client/README.md).
 - https://docs.anza.xyz/cli/install
 - https://docs.anza.xyz/cli/examples/test-validator
 - https://solana.com/developers/guides/getstarted/local-rust-hello-world
+- https://github.com/0xekez/simple-solana-program
+- https://github.com/solana-labs/example-helloworld
+- https://blog.crossmint.com/create-and-mint-nfts-on-solana/
