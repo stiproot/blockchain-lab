@@ -3,7 +3,7 @@
 An NFT (Non-Fungible Token) is a unique digital asset stored on a blockchain, representing ownership of a specific item—like artwork, music, videos, virtual goods, or even real-world assets. 
 Unlike cryptocurrencies such as Bitcoin or Ethereum, NFTs cannot be exchanged on a one-to-one basis because each one has a unique value and identity.
 
-The actual NFT content (image, video, audio, etc.) is usually not stored on the blockchain due to size and cost limitations. 
+The actual NFT content (image, video, audio, etc.) is usually not stored on the blockchain due to size and cost limitations.
 Instead, the NFT itself (the token) is a smart contract stored on the blockchain, which contains metadata and a reference (URI) pointing to the actual digital asset.
 
 How NFTs Store Data:
@@ -28,6 +28,86 @@ Example of an NFT smart contract:
     "rarity": "Legendary",
     "power": 95
   }
+}
+```
+
+# Assigning NFTs to Users (Mint & Purchase Flow)
+Since you want users to purchase NFTs, the flow typically follows these steps:
+
+1. User Requests to Buy an NFT
+A user sends a transaction to your smart contract indicating they want to buy an NFT.
+2. Create and Fund the Mint Account
+Your contract creates a new Mint Account (1 per NFT).
+The creator funds it with the necessary rent exemption (since accounts must maintain a minimum SOL balance to exist).
+3. Create the Metadata Account
+Use Metaplex Token Metadata Program to store name, symbol, and URI.
+4. Create the Master Edition Account
+This marks the NFT as a limited edition (1-of-1 or capped supply).
+5. Create the User's Token Account (ATA)
+Each user needs a token account to hold the NFT.
+Use Associated Token Account (ATA) for this.
+6. Mint the NFT to the User
+The smart contract calls mint_to on the SPL Token Program.
+The user’s token account receives exactly 1 token (NFT).
+7. Transfer Payment (If Required)
+If the user is buying the NFT, the contract:
+Transfers SOL from the user to the treasury account.
+Optionally, distributes royalties using Metaplex.
+
+```rs
+pub fn mint_nft(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    metadata_uri: String,
+) -> ProgramResult {
+    let accounts_iter = &mut accounts.iter();
+
+    let payer = next_account_info(accounts_iter)?; // User buying the NFT
+    let mint_account = next_account_info(accounts_iter)?; // Unique NFT mint
+    let user_token_account = next_account_info(accounts_iter)?; // Where NFT will be stored
+    let metadata_account = next_account_info(accounts_iter)?; // Metadata storage
+    let master_edition_account = next_account_info(accounts_iter)?; // Master edition
+    
+    // Initialize Mint Account
+    invoke(
+        &spl_token::instruction::initialize_mint(
+            &spl_token::id(),
+            mint_account.key,
+            payer.key, // Set payer as mint authority
+            None,
+            0, // NFTs have 0 decimals
+        )?,
+        &[mint_account.clone(), payer.clone()],
+    )?;
+
+    // Initialize Token Account for User
+    invoke(
+        &spl_associated_token_account::instruction::create_associated_token_account(
+            payer.key,
+            payer.key,
+            mint_account.key,
+        ),
+        &[payer.clone(), user_token_account.clone()],
+    )?;
+
+    // Mint 1 NFT to User
+    invoke(
+        &spl_token::instruction::mint_to(
+            &spl_token::id(),
+            mint_account.key,
+            user_token_account.key,
+            payer.key, // Must be the mint authority
+            &[],
+            1, // Mint 1 token (NFT)
+        )?,
+        &[mint_account.clone(), user_token_account.clone(), payer.clone()],
+    )?;
+
+    // Create Metadata & Master Edition (Metaplex)
+    create_metadata(metadata_account, mint_account, payer, metadata_uri)?;
+    create_master_edition(master_edition_account, mint_account, payer)?;
+
+    Ok(())
 }
 ```
 

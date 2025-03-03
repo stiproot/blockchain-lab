@@ -50,4 +50,35 @@ For example, an NFT minting program might have:
 - Metadata Account → Stores additional metadata like name, symbol, URI.
 
 
+## Sample
+```rs
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    pubkey::Pubkey,
+    msg,
+};
+
+pub fn process_instruction(
+    program_id: &Pubkey, // ID of the program
+    accounts: &[AccountInfo], // Accounts involved in this transaction
+    instruction_data: &[u8], // Input data
+) -> ProgramResult {
+    let accounts_iter = &mut accounts.iter();
+    
+    // Get the first account (the one we will modify)
+    let my_account = next_account_info(accounts_iter)?;
+
+    // Check if this account is owned by our program
+    if my_account.owner != program_id {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Read or modify data in the account (if needed)
+    msg!("Account address: {}", my_account.key);
+    
+    Ok(())
+}
+```
+
 
