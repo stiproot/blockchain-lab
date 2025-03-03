@@ -1,10 +1,11 @@
 # blockchain-lab
-Personal laboratory for experimenting with blockchains.
+Personal laboratory for experimenting with the **Solana** blockchain.
 
 # Concepts
 - [NFTs](.docs/NFTS.md)
 - [Smart Contracts](.docs/SMART_CONTRACTS.md)
 - [Transactions](.docs/TRANSACTIONS.md)
+- [Accounts](.docs/ACCOUNTS.md)
 
 ---
 
