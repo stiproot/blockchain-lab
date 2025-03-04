@@ -71,7 +71,7 @@ pub mod mint_nft {
                     mint: ctx.accounts.mint.to_account_info(),
                     system_program: ctx.accounts.system_program.to_account_info(),
                     token_program: ctx.accounts.token_program.to_account_info(),
-                    // rent: ctx.accounts.rent.to_account_info(),
+                    rent: ctx.accounts.rent.to_account_info(),
                 },
             ),
         )?;
