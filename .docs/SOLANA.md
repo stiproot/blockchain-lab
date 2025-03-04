@@ -19,3 +19,27 @@ It also enables you to interact with decentralized applications (dApps) on the S
 - CLI Wallets – Command-line wallets, such as Solana CLI, for developers and advanced users.
 - Hardware Wallets – Ledger Nano S/X and Trezor provide cold storage for extra security.
 - Paper Wallets – A printed version of your private key for offline storage.
+
+# Program Derived Addresses (PDA)
+There exists a type of Account, called Program Derived Account, whose address is not the public key of a cryptographic key pair but instead is algorithmically derived from the public key of the Program that owns the Account. 
+We call that address a Program Derived Address or PDA for short.
+Since the address is always derived from the public key of the Program, no other Program can algorithmically derive the same address. 
+On top of that, additional Seeds can be provided to the algorithm to add more context to the address.
+
+This has a variety of use cases such as enabling programs to sign Cross-Program Invocations or enabling the creation of accounts within an address that can be derived deterministically.
+
+Note that, by design, Program Derived Addresses will never conflict with cryptographically generated public keys.
+All cryptographic public keys are part of what we call an Elliptic-curve.
+If, when generating a PDA, the algorithm generated a key that falls on that curve, a Bump is added to the address and is incremented by one until the generated address no longer falls on the curve.
+
+# Accounts
+In the context Solana’s Token program, Mint Accounts are responsible for storing the global information of a Token and Token Accounts store the relationship between a wallet and a Mint Account.
+Whilst Mint Accounts contain a few data attributes such as its current supply, it doesn't offer the ability to inject standardized data that can be understood by apps and marketplaces.
+This is why the Token Metadata program offers a Metadata Account that attaches itself to a Mint Account via a PDA.
+
+- [https://developers.metaplex.com/token-metadata](https://developers.metaplex.com/token-metadata)
+
+# Cross Program Invocation (CPI)
+A CPI is the interaction of one program invoking an instruction on another program.
+An example would be that I make a program and during this transaction I need to transfer an NFT or Asset during this transaction.
+Well my program can CPI call and ask the Token Metadata or Core programs to execute the transfer instruction for me if I give it all the correct details.
