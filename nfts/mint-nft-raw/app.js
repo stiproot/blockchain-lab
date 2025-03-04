@@ -47,7 +47,7 @@ export async function main() {
 
     const programKeypair = await createKeypairFromFile(
         path.join(
-            path.resolve('.', '.config'),
+            path.resolve('.', '.cfg'),
             'mint_nft_raw-keypair.json'
         ));
     const programId = programKeypair.publicKey;

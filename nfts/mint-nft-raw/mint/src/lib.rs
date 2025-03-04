@@ -18,7 +18,7 @@ use {
     },
 };
 
-declare_id!("ECw4iTHSjdVyrXFMZpVp7yfRZ1P4qnuB7awDKBjtmozT");
+declare_id!("EgK5imnf8oFhjMigjXPMy8o8hKdjKm3BcQSJE14xWrmR");
 
 entrypoint!(process_instruction);
 
@@ -35,7 +35,7 @@ fn process_instruction(
     let token_account = next_account_info(accounts_iter)?;
     let mint_authority = next_account_info(accounts_iter)?;
     let rent = next_account_info(accounts_iter)?;
-    let system_program = next_account_info(accounts_iter)?;
+    let _system_program = next_account_info(accounts_iter)?;
     let token_program = next_account_info(accounts_iter)?;
     let associated_token_program = next_account_info(accounts_iter)?;
     

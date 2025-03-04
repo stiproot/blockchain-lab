@@ -40,3 +40,11 @@ Local account loaded successfully.
 Program ID: <<program-id>>
 New token: <<token-key>>
 ```
+
+View your log file (note that your location will differ depending on how & where you ran `solana-test-validator`):
+`cat ~/.config/solana/test-ledger/validator.log`
+
+---
+
+# Resources
+- https://solana.stackexchange.com/questions/14899/getting-build-error-the-global-allocator-in-spl-token-conflicts-with-globa
