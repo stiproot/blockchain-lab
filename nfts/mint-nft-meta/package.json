@@ -1,0 +1,26 @@
+{
+  "name": "native-sol",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "app": "node ./app.js",
+    "build:program": "cargo build-sbf --manifest-path=./mint/Cargo.toml --sbf-out-dir=./dist/program",
+    "keygen": "solana-keygen new -o .cfg/mint_nft_raw-keypair.json --force",
+    "deploy": "solana program-v4 deploy ./dist/program/mint.so --program-keypair .cfg/mint_nft_raw-keypair.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/buffer-layout": "^4.0.1",
+    "@solana/spl-token": "^0.4.12",
+    "@solana/web3.js": "^1.98.0",
+    "mz": "^2.7.0",
+    "ts-node": "^10.9.2",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/mz": "^2.7.4"
+  }
+}
