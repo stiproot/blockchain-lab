@@ -13,7 +13,7 @@ use {
     spl_token::instruction as token_instruction,
 };
 
-declare_id!("Gn6Lsrpsg7y3MzAsZVJMvgfp1V2pnLjsFH6w81D1hxzC");
+declare_id!("6tjRWbM64NGCL4ELNixwTkuz1KurwQaY3pfBoMVfXSBD");
 
 entrypoint!(process_instruction);
 
