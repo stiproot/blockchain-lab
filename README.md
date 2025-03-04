@@ -84,6 +84,11 @@ Refer to [nfts/mint-nft-raw/README.md](nfts/mint-nft-raw/README.md).
 solana programs show --programs
 ```
 
+Get wallet's public key:
+```sh
+solana address
+```
+
 ---
 
 # Resources
