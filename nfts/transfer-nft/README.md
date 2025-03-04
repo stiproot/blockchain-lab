@@ -119,3 +119,14 @@ await sendAndConfirmTransaction(connection, tx, [sender]);
 
 console.log("NFT successfully transferred!");
 ```
+
+```rs
+let transfer_instruction = spl_token::instruction::transfer(
+    &spl_token::id(),
+    &game_token_account_pubkey,  // The game’s non-ATA Token Account
+    &user_ata_pubkey,            // The user’s ATA (must exist)
+    &game_program_id,            // The program must sign the transaction
+    &[],
+    amount_to_transfer,          // Amount of tokens to send
+)?;
+```
