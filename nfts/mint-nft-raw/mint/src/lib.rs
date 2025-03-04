@@ -33,11 +33,11 @@ fn process_instruction(
     let associated_token_program = next_account_info(accounts_iter)?;
 
     let create_mint_account_ix = system_instruction::create_account(
-        &mint_authority.key,
-        &mint_account.key,
-        LAMPORTS_PER_SOL,
-        82,
-        &token_program.key,
+        &mint_authority.key,    // Payer of the account creation
+        &mint_account.key,      // New account to be created
+        LAMPORTS_PER_SOL,       // Amount of lamports to transfer for the rent exemption
+        82,                     // Space in bytes for the account's data
+        &token_program.key,     // Owner program of the new account
     );
 
     msg!("Creating mint account...");
