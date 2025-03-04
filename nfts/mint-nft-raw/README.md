@@ -1,3 +1,6 @@
+*NOTE:*
+Node scripts are used as an alternative to a Makefile. ie. scripts are defined that encapsulate non-node Solana CLI commands.
+
 Generate a new keypair:
 ```sh
 npm run keygen
