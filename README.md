@@ -79,6 +79,17 @@ Refer to [simple-client/README.md](simple-client/README.md).
 
 ---
 
+# Useful Commands
+
+```sh
+solana programs show --programs
+```
+
+```sh
+```
+
+---
+
 # Resources
 - https://docs.anza.xyz/cli/install
 - https://docs.anza.xyz/cli/examples/test-validator
