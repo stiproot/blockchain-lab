@@ -69,13 +69,12 @@ NOTE: This command needs to be running when the target transaction is executed. 
 
 ---
 
-# Deploy Smart Contract 
+# Sample Projects
+## Deploy Smart Contract 
 Refer to [hello_world/README.md](hello_world/README.md).
 
----
-
-# Use the Web3 Client
-Refer to [simple-client/README.md](simple-client/README.md).
+## Mint a NFT using a Smart Contract
+Refer to [nfts/mint-nft-raw/README.md](nfts/mint-nft-raw/README.md).
 
 ---
 
@@ -83,9 +82,6 @@ Refer to [simple-client/README.md](simple-client/README.md).
 
 ```sh
 solana programs show --programs
-```
-
-```sh
 ```
 
 ---
