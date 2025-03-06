@@ -98,3 +98,6 @@ solana address
 - https://github.com/0xekez/simple-solana-program
 - https://github.com/solana-labs/example-helloworld
 - https://blog.crossmint.com/create-and-mint-nfts-on-solana/
+- https://github.com/solana-labs/solana-program-library/tree/master/examples/rust
+- https://spl.solana.com/token
+- https://spl.solana.com/associated-token-account
