@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "run": "node index.js",
     "keygen:mint-nfts": "solana-keygen new -o .cfg/mint_nfts-keypair.json --force",
     "client:mint-nfts": "node mint-nfts.client.js",
     "build:program:mint-nfts": "cargo build-sbf --manifest-path=./mint_nfts/Cargo.toml --sbf-out-dir=./mint_nfts/dist/program",
@@ -14,6 +15,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.1.1",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.1.1",
     "@solana/buffer-layout": "^4.0.1",
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.98.0",
