@@ -1,7 +1,8 @@
 import {
     Connection,
-    Keypair,
+    Keypair as Web3Keypair,
 } from '@solana/web3.js';
+import { Keypair, Umi } from '@metaplex-foundation/umi';
 import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
@@ -20,7 +21,7 @@ const CONFIG_FILE_PATH = path.resolve(
 export async function createKeypairFromFile(filePath: string) {
     const secretKeyString = await fs.readFile(filePath, { encoding: 'utf8' });
     const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    return Keypair.fromSecretKey(secretKey);
+    return Web3Keypair.fromSecretKey(secretKey);
 }
 
 export async function loadKeypairCfg(fileName: string) {
@@ -37,6 +38,12 @@ export async function loadWalletKeypair() {
     const keypairPath = await yaml.parse(configYml).keypair_path;
     const walletKeypair = await createKeypairFromFile(keypairPath);
     return walletKeypair;
+}
+
+export async function buildWalletKeypair(umi: Umi): Promise<Keypair> {
+    const payer: Web3Keypair = await loadWalletKeypair();
+    const umiKeypair = umi.eddsa.createKeypairFromSecretKey(payer.secretKey);
+    return umiKeypair;
 }
 
 export const createConn = () => new Connection('http://127.0.0.1:8899', 'confirmed');

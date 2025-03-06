@@ -1,16 +1,8 @@
-// import { createTokenWithMetadata } from "./mint";
-import { Keypair as Web3Keypair, Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
-import { loadWalletKeypair } from './utls';
+import { buildWalletKeypair } from './utls';
 import { buildUmi } from './factories';
 import { createSignerFromKeypair, generateSigner, Keypair, keypairIdentity, percentAmount, Umi } from '@metaplex-foundation/umi';
-import { fromWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { createV1, mintV1, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 
-async function buildWalletKeypair(umi: Umi): Promise<Keypair> {
-  const payer: Web3Keypair = await loadWalletKeypair();
-  const umiKeypair = umi.eddsa.createKeypairFromSecretKey(payer.secretKey);
-  return umiKeypair;
-}
 
 async function main() {
 

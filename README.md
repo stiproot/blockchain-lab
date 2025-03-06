@@ -105,3 +105,7 @@ solana address
 
 - https://github.com/metaplex-foundation/mpl-token-metadata/tree/main/clients/rust
 - https://github.com/metaplex-foundation/mpl-token-metadata/blob/main/clients/rust/tests/mint.rs
+
+- https://developers.metaplex.com/token-metadata/mint
+- https://developers.metaplex.com/token-metadata/fetch
+- https://developers.metaplex.com/token-metadata/transfer
