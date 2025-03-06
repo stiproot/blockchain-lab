@@ -1,0 +1,27 @@
+{
+  "name": "minting-scripts",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "keygen:mint-nfts": "solana-keygen new -o .cfg/mint_nfts-keypair.json --force",
+    "client:mint-nfts": "node mint-nfts.client.js",
+    "build:program:mint-nfts": "cargo build-sbf --manifest-path=./mint_nfts/Cargo.toml --sbf-out-dir=./mint_nfts/dist/program",
+    "deploy:program:mint-nfts": "solana program-v4 deploy ./mint_nfts/dist/program/mint_nfts.so --program-keypair .cfg/mint_nfts-keypair.json --url http://127.0.0.1:8899",
+    "deploy:program:mint-nfts:devnet": "solana program deploy ./mint_nfts/dist/program/mint_nfts.so --program-id .cfg/mint_nfts-keypair.json --url https://api.devnet.solana.com"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/buffer-layout": "^4.0.1",
+    "@solana/spl-token": "^0.4.12",
+    "@solana/web3.js": "^1.98.0",
+    "mz": "^2.7.0",
+    "ts-node": "^10.9.2",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/mz": "^2.7.4"
+  }
+}
