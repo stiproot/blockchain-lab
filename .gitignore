@@ -30,3 +30,5 @@ package-lock.json
 
 dist/
 nscacert.pem
+test-ledger/
+metadata.so
