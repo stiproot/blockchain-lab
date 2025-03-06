@@ -8,6 +8,7 @@
     "create-nft": "ts-node src/create-nft.ts",
     "fetch-nft": "ts-node src/fetch-nft.ts",
     "transfer-nft": "ts-node src/transfer-nft.ts",
+    "burn-nft": "ts-node src/burn-nft.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
     "build": "tsc",
     "start": "node dist/index.js",

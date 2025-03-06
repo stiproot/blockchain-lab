@@ -4,7 +4,6 @@ import { createSignerFromKeypair, keypairIdentity, publicKey } from '@metaplex-f
 import { fetchDigitalAssetWithAssociatedToken } from '@metaplex-foundation/mpl-token-metadata';
 
 
-// Example usage
 async function main() {
 
   const umi = buildUmi();

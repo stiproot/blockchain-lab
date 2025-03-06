@@ -1,7 +1,7 @@
-import { buildWalletKeypair } from './utls';
+import { buildWalletKeypair, loadKeypairCfg } from './utls';
 import { buildUmi } from './factories';
 import { createSignerFromKeypair, keypairIdentity, publicKey } from '@metaplex-foundation/umi';
-import { fetchDigitalAssetWithAssociatedToken, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
+import { burnV1, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 
 
 async function main() {
@@ -10,25 +10,20 @@ async function main() {
 
   const walletKeypair = await buildWalletKeypair(umi);
   const payerSigner = createSignerFromKeypair(umi, walletKeypair);
-
   const mint = publicKey('GAyMwZFeNq2mcpBmnozgvwyy8J1vvwsZCe1rpDuY4KVN');
 
-  // wallet...
-  const currentOwner = publicKey('4cCksob3hnM1a8J16jRU3E1UE8WHctYzb5vDgekq3Z6X');
-  const newOwner = publicKey('8Ht66RCXxrh5JwYLNTNKWx6frNdVMxroThiH5Wmvmvju');
+  const ownerWeb3Keypair = await loadKeypairCfg('tmp-keypair.json');
+  const ownerKeypair = umi.eddsa.createKeypairFromSecretKey(ownerWeb3Keypair.secretKey);
+  const ownerAuthority = createSignerFromKeypair(umi, ownerKeypair);
 
   umi.use(keypairIdentity(payerSigner));
 
-  await transferV1(umi, {
+  await burnV1(umi, {
     mint,
-    authority: payerSigner,
-    tokenOwner: currentOwner,
-    destinationOwner: newOwner,
+    authority: ownerAuthority,
+    tokenOwner: ownerAuthority.publicKey,
     tokenStandard: TokenStandard.NonFungible,
   }).sendAndConfirm(umi);
-
-  const asset = await fetchDigitalAssetWithAssociatedToken(umi, mint, newOwner);
-  console.log(asset);
 }
 
 main().then(() => {
