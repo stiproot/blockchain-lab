@@ -102,3 +102,6 @@ solana address
 - https://github.com/solana-labs/solana-program-library/tree/master/examples/rust
 - https://spl.solana.com/token
 - https://spl.solana.com/associated-token-account
+
+- https://github.com/metaplex-foundation/mpl-token-metadata/tree/main/clients/rust
+- https://github.com/metaplex-foundation/mpl-token-metadata/blob/main/clients/rust/tests/mint.rs
