@@ -6,6 +6,7 @@ Personal laboratory for experimenting with the **Solana** blockchain.
 - [Smart Contracts](.docs/SMART_CONTRACTS.md)
 - [Transactions](.docs/TRANSACTIONS.md)
 - [Accounts](.docs/ACCOUNTS.md)
+- [DELEGATION](.docs/DELEGATION.md)
 
 ---
 
