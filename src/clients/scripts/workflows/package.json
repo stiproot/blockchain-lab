@@ -1,5 +1,5 @@
 {
-  "name": "mint",
+  "name": "workflows",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,6 @@
     "fetch-nft": "ts-node src/fetch-nft.ts",
     "transfer-nft": "ts-node src/transfer-nft.ts",
     "burn-nft": "ts-node src/burn-nft.ts",
-    "update-nft": "ts-node src/update-nft.ts",
     "delegate-workflow": "ts-node src/delegate-workflow.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
     "sol-keygen-delegate": "solana-keygen new -o .cfg/delegate-keypair.json --force",
@@ -38,6 +37,7 @@
     "@metaplex-foundation/mpl-toolbox": "^0.10.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.1.1",
     "@metaplex-foundation/umi-web3js-adapters": "^1.1.1",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0",
     "mz": "^2.7.0",
     "yaml": "^2.7.0"
