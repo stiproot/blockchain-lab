@@ -9,7 +9,10 @@
     "fetch-nft": "ts-node src/fetch-nft.ts",
     "transfer-nft": "ts-node src/transfer-nft.ts",
     "burn-nft": "ts-node src/burn-nft.ts",
+    "delegate-workflow": "ts-node src/delegate-workflow.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
+    "sol-keygen-delegate": "solana-keygen new -o .cfg/delegate-keypair.json --force",
+    "sol-keygen-wallet-x": "solana-keygen new -o .cfg/wallet-x-keypair.json --force",
     "build": "tsc",
     "start": "node dist/index.js",
     "fix": "npx eslint src/ --fix"
