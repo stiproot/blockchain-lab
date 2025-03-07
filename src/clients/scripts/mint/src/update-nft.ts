@@ -23,20 +23,22 @@ async function main() {
     sellerFeeBasisPoints: percentAmount(5.5),
     symbol: '$',
     collection: some({ key: mint.publicKey, verified: false }),
+    isMutable: true,
+    primarySaleHappened: false,
   }).sendAndConfirm(umi);
 
   console.log("Attempting to fetch metadata from seeds...")
   let metadata = await fetchMetadataFromSeeds(umi, { mint: mint.publicKey });
   console.log(metadata);
 
-  console.log("Attempting update metadata...")
+  console.log("Attempting update metadata...");
   await updateV1(umi, {
     mint: mint.publicKey,
     authority: payerSigner,
     data: { ...metadata, name: 'player-a-pubkey' },
   }).sendAndConfirm(umi);
 
-  console.log("Attempting to fetch metadata from seeds...")
+  console.log("Attempting to fetch metadata from seeds...");
   metadata = await fetchMetadataFromSeeds(umi, { mint: mint.publicKey });
   console.log(metadata);
 }

@@ -63,8 +63,13 @@ Run:
 npm run burn-nft
 ```
 
-# Workflows
+**Update:**
+Run:
+```sh
+npm run update-nft
+```
 
+# Workflows
 **Delegate Workflow:**
 Run:
 ```sh

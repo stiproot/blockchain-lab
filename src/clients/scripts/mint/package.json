@@ -7,10 +7,11 @@
     "create-mint": "ts-node src/create-mint.ts",
     "create-nft": "ts-node src/create-nft.ts",
     "fetch-nft": "ts-node src/fetch-nft.ts",
+    "fetch-nfts-by-collection": "ts-node src/fetch-nfts-by-collection.ts",
     "transfer-nft": "ts-node src/transfer-nft.ts",
     "burn-nft": "ts-node src/burn-nft.ts",
     "update-nft": "ts-node src/update-nft.ts",
-    "delegate-workflow": "ts-node src/delegate-workflow.ts",
+    "delegate-workflow": "ts-node src/delegate-workflow2.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
     "sol-keygen-delegate": "solana-keygen new -o .cfg/delegate-keypair.json --force",
     "sol-keygen-wallet-x": "solana-keygen new -o .cfg/wallet-x-keypair.json --force",
@@ -34,6 +35,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@metaplex-foundation/digital-asset-standard-api": "^1.0.6",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
     "@metaplex-foundation/mpl-toolbox": "^0.10.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.1.1",
