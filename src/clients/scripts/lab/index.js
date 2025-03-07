@@ -6,8 +6,8 @@ import {
   TokenStandard,
 } from '@metaplex-foundation/mpl-token-metadata';
 import {
-    loadKeypairCfg,
-    loadWalletKeypair,
+    loadKeypairFromCfg,
+    loadDefaultWalletKeypair,
     createConn,
     createDevConn
 } from './utls.js';
@@ -15,7 +15,7 @@ import {
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import { mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata'
 
-const walletKeypair = await loadWalletKeypair();
+const walletKeypair = await loadDefaultWalletKeypair();
 
 // Use the RPC endpoint of your choice.
 // const umi = createUmi('http://127.0.0.1:8899')

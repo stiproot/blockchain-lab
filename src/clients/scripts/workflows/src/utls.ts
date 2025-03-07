@@ -24,7 +24,7 @@ export async function createKeypairFromFile(filePath: string) {
     return Web3Keypair.fromSecretKey(secretKey);
 }
 
-export async function loadKeypairCfg(fileName: string) {
+export async function loadKeypairFromCfg(fileName: string) {
     const keypair = await createKeypairFromFile(
         path.join(
             path.resolve('.', '.cfg'),
@@ -33,7 +33,7 @@ export async function loadKeypairCfg(fileName: string) {
     return keypair;
 }
 
-export async function loadWalletKeypair() {
+export async function loadDefaultWalletKeypair() {
     const configYml = await fs.readFile(CONFIG_FILE_PATH, { encoding: 'utf8' });
     const keypairPath = await yaml.parse(configYml).keypair_path;
     const walletKeypair = await createKeypairFromFile(keypairPath);
@@ -41,7 +41,7 @@ export async function loadWalletKeypair() {
 }
 
 export async function buildWalletKeypair(umi: Umi): Promise<Keypair> {
-    const payer: Web3Keypair = await loadWalletKeypair();
+    const payer: Web3Keypair = await loadDefaultWalletKeypair();
     const umiKeypair = umi.eddsa.createKeypairFromSecretKey(payer.secretKey);
     return umiKeypair;
 }

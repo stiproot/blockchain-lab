@@ -23,7 +23,7 @@ export async function createKeypairFromFile(filePath) {
     return Keypair.fromSecretKey(secretKey);
 }
 
-export async function loadKeypairCfg(fileName) {
+export async function loadKeypairFromCfg(fileName) {
     const keypair = await createKeypairFromFile(
         path.join(
             path.resolve('.', '.cfg'),
@@ -32,7 +32,7 @@ export async function loadKeypairCfg(fileName) {
     return keypair;
 }
 
-export async function loadWalletKeypair() {
+export async function loadDefaultWalletKeypair() {
     const configYml = await fs.readFile(CONFIG_FILE_PATH, { encoding: 'utf8' });
     const keypairPath = await yaml.parse(configYml).keypair_path;
     const walletKeypair = await createKeypairFromFile(keypairPath);

@@ -109,3 +109,8 @@ solana address
 - https://developers.metaplex.com/token-metadata/mint
 - https://developers.metaplex.com/token-metadata/fetch
 - https://developers.metaplex.com/token-metadata/transfer
+- https://github.com/metaplex-foundation/mpl-token-metadata/tree/main/programs/token-metadata/js/test
+
+- https://github.com/anza-xyz/wallet-adapter/blob/master/WALLET.md
+
+- https://developers.metaplex.com/umi/metaplex-umi-plugins

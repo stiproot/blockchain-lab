@@ -13,8 +13,8 @@ import {
     PublicKey,
 } from '@solana/web3.js';
 import {
-    loadKeypairCfg,
-    loadWalletKeypair,
+    loadKeypairFromCfg,
+    loadDefaultWalletKeypair,
     createConn,
     createDevConn
 } from './utls.js';
@@ -44,8 +44,8 @@ function buildInstructionData(name, noTokens) {
 export async function main() {
     const connection = createDevConn();
 
-    const walletKeypair = await loadWalletKeypair();
-    const programKeypair = await loadKeypairCfg('mint_nfts-keypair.json');
+    const walletKeypair = await loadDefaultWalletKeypair();
+    const programKeypair = await loadKeypairFromCfg('mint_nfts-keypair.json');
     const programId = programKeypair.publicKey;
 
     const mintKeypair = Keypair.generate();

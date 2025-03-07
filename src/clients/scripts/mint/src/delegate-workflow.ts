@@ -1,4 +1,4 @@
-import { buildWalletKeypair, loadKeypairCfg } from './utls';
+import { buildWalletKeypair, loadKeypairFromCfg } from './utls';
 import { buildUmi } from './factories';
 import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, publicKey } from '@metaplex-foundation/umi';
 import { burnV1, createNft, delegateStandardV1, fetchDigitalAssetWithAssociatedToken, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
@@ -16,7 +16,7 @@ async function main() {
   const mint: KeypairSigner = generateSigner(umi);
 
   // Delegate...
-  const delegateWeb3Keypair = await loadKeypairCfg('delegate-keypair.json');
+  const delegateWeb3Keypair = await loadKeypairFromCfg('delegate-keypair.json');
   const delegateKeypair = umi.eddsa.createKeypairFromSecretKey(delegateWeb3Keypair.secretKey);
   const delegateAuthority = createSignerFromKeypair(umi, delegateKeypair);
 
@@ -44,7 +44,7 @@ async function main() {
   await delegateTransactionBuilder.sendAndConfirm(umi);
 
   // New owner...
-  const newOwnerWeb3Keypair = await loadKeypairCfg('wallet-x-keypair.json');
+  const newOwnerWeb3Keypair = await loadKeypairFromCfg('wallet-x-keypair.json');
   const newOwnerKeypair = umi.eddsa.createKeypairFromSecretKey(newOwnerWeb3Keypair.secretKey);
   const newOwnerAuthority = createSignerFromKeypair(umi, newOwnerKeypair);
 

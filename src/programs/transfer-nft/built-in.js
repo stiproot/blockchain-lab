@@ -30,7 +30,7 @@ export async function createKeypairFromFile(filePath) {
     return Keypair.fromSecretKey(secretKey);
 }
 
-export async function loadKeypairCfg(fileName) {
+export async function loadKeypairFromCfg(fileName) {
     const keypair = await createKeypairFromFile(
         path.join(
             path.resolve('.', '.cfg'),
@@ -39,7 +39,7 @@ export async function loadKeypairCfg(fileName) {
     return keypair;
 }
 
-export async function loadWalletKeypair() {
+export async function loadDefaultWalletKeypair() {
     const configYml = await fs.readFile(CONFIG_FILE_PATH, { encoding: 'utf8' });
     const keypairPath = await yaml.parse(configYml).keypair_path;
     const walletKeypair = await createKeypairFromFile(keypairPath);
@@ -53,8 +53,8 @@ export async function main() {
     const conn = createConn();
     console.log(`Successfully connected to Solana net.`);
 
-    const walletKeypair = await loadWalletKeypair()
-    const recipientKeypair = await loadKeypairCfg('recipient-keypair.json');
+    const walletKeypair = await loadDefaultWalletKeypair()
+    const recipientKeypair = await loadKeypairFromCfg('recipient-keypair.json');
     const mintPublicKey = new PublicKey("9z7NcrGnb2a6tYTr7wLrs7ffhT2ADQxAsDEWEt8tANvM");
 
     const senderTokenAccount = await getAssociatedTokenAddress(mintPublicKey, walletKeypair.publicKey);

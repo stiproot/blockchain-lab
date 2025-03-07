@@ -1,4 +1,4 @@
-import { buildWalletKeypair, loadKeypairCfg } from './utls';
+import { buildWalletKeypair, loadKeypairFromCfg } from './utls';
 import { buildUmi } from './factories';
 import { createSignerFromKeypair, keypairIdentity, publicKey } from '@metaplex-foundation/umi';
 import { burnV1, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
@@ -12,7 +12,7 @@ async function main() {
   const payerSigner = createSignerFromKeypair(umi, walletKeypair);
   const mint = publicKey('GAyMwZFeNq2mcpBmnozgvwyy8J1vvwsZCe1rpDuY4KVN');
 
-  const ownerWeb3Keypair = await loadKeypairCfg('tmp-keypair.json');
+  const ownerWeb3Keypair = await loadKeypairFromCfg('tmp-keypair.json');
   const ownerKeypair = umi.eddsa.createKeypairFromSecretKey(ownerWeb3Keypair.secretKey);
   const ownerAuthority = createSignerFromKeypair(umi, ownerKeypair);
 
