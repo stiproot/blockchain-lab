@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Collision Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-top: 20px;
+        }
+        .controls {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .control-group {
+            margin: 10px;
+            flex: 1;
+            min-width: 150px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 22px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #7f8c8d;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bubble Collision Simulation</h1>
+    <p>Watch bubbles float and collide - smaller bubbles pop when they hit larger ones!</p>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="numBubbles">Number of Bubbles:</label>
+            <input type="number" id="numBubbles" min="1" max="100" value="20">
+        </div>
+        <div class="control-group">
+            <label for="speed">Speed Factor:</label>
+            <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label for="minRadius">Min Radius:</label>
+            <input type="number" id="minRadius" min="5" max="50" value="10">
+        </div>
+        <div class="control-group">
+            <button id="restartButton">Restart Simulation</button>
+        </div>
+    </div>
+    
+    <canvas id="bubbleCanvas" width="800" height="600"></canvas>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('bubbleCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Controls
+        const numBubblesInput = document.getElementById('numBubbles');
+        const speedInput = document.getElementById('speed');
+        const minRadiusInput = document.getElementById('minRadius');
+        const restartButton = document.getElementById('restartButton');
+        
+        // Parameters
+        let bubbles = [];
+        let minRadius = parseInt(minRadiusInput.value);
+        let maxRadius = 50;
+        let gravity = 0.02;
+        let friction = 0.99;
+        let buoyancy = 0.1;
+        
+        // Color options for bubbles
+        const colors = [
+            { stroke: 'rgba(255, 255, 255, 0.8)', fill: 'rgba(100, 200, 255, 0.3)' },
+            { stroke: 'rgba(255, 255, 255, 0.8)', fill: 'rgba(150, 220, 255, 0.4)' },
+            { stroke: 'rgba(255, 255, 255, 0.8)', fill: 'rgba(200, 240, 255, 0.3)' },
+        ];
+        
+        // Bubble class
+        class Bubble {
+            constructor(x, y, radius) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.colorIndex = Math.floor(Math.random() * colors.length);
+                this.isPopped = false;
+                this.wobbleOffset = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.03 + Math.random() * 0.02;
+                this.wobbleAmount = 0.2 + Math.random() * 0.3;
+            }
+            
+            update(speedFactor) {
+                if (this.isPopped) return;
+                
+                // Apply speed factor
+                const adjustedVx = this.vx * speedFactor;
+                const adjustedVy = this.vy * speedFactor;
+                
+                // Apply buoyancy (bubbles rise)
+                this.vy -= buoyancy * (this.radius / maxRadius) * speedFactor;
+                
+                // Apply gravity and friction
+                this.vy += gravity * speedFactor;
+                this.vx *= friction;
+                this.vy *= friction;
+                
+                // Update position
+                this.x += adjustedVx;
+                this.y += adjustedVy;
+                
+                // Boundary collision
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.vx = -this.vx;
+                    this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                }
+                
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.vy = -this.vy * 0.8;
+                    this.y = Math.max(this.radius, Math.min(canvas.height - this.radius, this.y));
+                }
+                
+                // Wobble effect
+                this.wobbleOffset += this.wobbleSpeed;
+            }
+            
+            draw() {
+                if (this.isPopped) return;
+                
+                ctx.beginPath();
+                
+                // Add wobble effect to radius for more natural look
+                const wobbledRadius = this.radius * (1 + Math.sin(this.wobbleOffset) * this.wobbleAmount * 0.05);
+                
+                // Draw main bubble
+                ctx.arc(this.x, this.y, wobbledRadius, 0, Math.PI * 2, false);
+                ctx.strokeStyle = colors[this.colorIndex].stroke;
+                ctx.fillStyle = colors[this.colorIndex].fill;
+                ctx.lineWidth = 2;
+                ctx.fill();
+                ctx.stroke();
+                
+                // Draw highlight (makes bubble look more realistic)
+                ctx.beginPath();
+                const highlightRadius = wobbledRadius * 0.35;
+                const highlightX = this.x - wobbledRadius * 0.3;
+                const highlightY = this.y - wobbledRadius * 0.3;
+                ctx.arc(highlightX, highlightY, highlightRadius, 0, Math.PI * 2, false);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fill();
+            }
+        }
+        
+        // Create initial bubbles
+        function createBubbles() {
+            const count = parseInt(numBubblesInput.value);
+            minRadius = parseInt(minRadiusInput.value);
+            
+            bubbles = [];
+            for (let i = 0; i < count; i++) {
+                const radius = minRadius + Math.random() * (maxRadius - minRadius);
+                const x = Math.random() * (canvas.width - radius * 2) + radius;
+                const y = Math.random() * (canvas.height - radius * 2) + radius;
+                
+                // Check for overlaps with existing bubbles
+                let overlapping = false;
+                for (let j = 0; j < bubbles.length; j++) {
+                    const dx = x - bubbles[j].x;
+                    const dy = y - bubbles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < radius + bubbles[j].radius) {
+                        overlapping = true;
+                        break;
+                    }
+                }
+                
+                // If not overlapping, add the bubble
+                if (!overlapping) {
+                    bubbles.push(new Bubble(x, y, radius));
+                } else {
+                    // Try again
+                    i--;
+                }
+            }
+        }
+        
+        // Check collisions between bubbles
+        function checkCollisions() {
+            for (let i = 0; i < bubbles.length; i++) {
+                if (bubbles[i].isPopped) continue;
+                
+                for (let j = i + 1; j < bubbles.length; j++) {
+                    if (bubbles[j].isPopped) continue;
+                    
+                    const dx = bubbles[i].x - bubbles[j].x;
+                    const dy = bubbles[i].y - bubbles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Check for collision
+                    if (distance < bubbles[i].radius + bubbles[j].radius) {
+                        // Determine which bubble is smaller
+                        if (bubbles[i].radius < bubbles[j].radius) {
+                            bubbles[i].isPopped = true;
+                            logCollision(bubbles[i], bubbles[j]);
+                        } else {
+                            bubbles[j].isPopped = true;
+                            logCollision(bubbles[j], bubbles[i]);
+                        }
+                        
+                        // Elastic collision physics for the surviving bubble
+                        const angle = Math.atan2(dy, dx);
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+                        
+                        // Update velocities based on collision
+                        if (bubbles[i].radius < bubbles[j].radius) {
+                            // Apply force to larger bubble (j)
+                            const force = 0.05 * bubbles[i].radius / bubbles[j].radius;
+                            bubbles[j].vx -= cos * force;
+                            bubbles[j].vy -= sin * force;
+                        } else {
+                            // Apply force to larger bubble (i)
+                            const force = 0.05 * bubbles[j].radius / bubbles[i].radius;
+                            bubbles[i].vx -= cos * force;
+                            bubbles[i].vy -= sin * force;
+                        }
+                    }
+                }
+            }
+            
+            // Remove popped bubbles
+            bubbles = bubbles.filter(bubble => !bubble.isPopped);
+        }
+        
+        // Function to log collision information to console
+        function logCollision(smaller, larger) {
+            console.log(`Collision detected! Bubble with radius ${smaller.radius.toFixed(2)} popped after hitting bubble with radius ${larger.radius.toFixed(2)}`);
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const speedFactor = parseFloat(speedInput.value);
+            
+            // Update and draw bubbles
+            bubbles.forEach(bubble => {
+                bubble.update(speedFactor);
+                bubble.draw();
+            });
+            
+            // Check for collisions
+            checkCollisions();
+        }
+        
+        // Event listeners
+        restartButton.addEventListener('click', createBubbles);
+        
+        // Initial setup
+        createBubbles();
+        animate();
+    </script>
+</body>
+</html>
