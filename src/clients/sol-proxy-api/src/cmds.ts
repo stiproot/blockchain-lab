@@ -1,6 +1,6 @@
 import { IReq, ICmd, IInstruction } from './types';
 import { Response } from 'express';
-import { setup, transferNft, transferSol } from './core';
+import { createAccounts, setup, transferNft, transferSol } from './core';
 
 export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procSetupCmd START.`);
@@ -9,6 +9,16 @@ export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   const resp = await setup(name, noTokens);
 
   console.info(`procSetupCmd END.`);
+  res.status(200).json(resp);
+};
+
+export const procCreateAccsCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procCreateAccsCmd START.`);
+
+  const { noAccs }: { noAccs: number } = req.body.cmdData;
+  const resp = await createAccounts(noAccs);
+
+  console.info(`procCreateAccsCmd END.`);
   res.status(200).json(resp);
 };
 

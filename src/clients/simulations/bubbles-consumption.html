@@ -29,10 +29,13 @@
         const RADIUS_INCREASE_UNIT = 5;
         const API_HOST_URL = 'http://localhost:3001';
         const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
+        const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
         const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
-        const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
+        const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
         const NO_TOKENS = 3;
         let bubbles = [];
+        let accs = [];
+        const globalInit = false;
 
         function getRandomColor() {
             const r = Math.floor(Math.random() * 256);
@@ -41,27 +44,74 @@
             return `rgba(${r}, ${g}, ${b}, 0.8)`;
         }
 
-        async function init() {
-            bubbles = [];
-            const payload = { cmdData: { name: 'bc-2', noTokens: 3 } };
-            callApi(SETUP_URL, payload)
-                .then(data => {
-                    console.log('data', data);
-                    for (let i = 0; i < NO_TOKENS; i++) {
-                        let radius = Math.random() * 30 + 10;
-                        let x = Math.random() * (canvas.width - radius * 2) + radius;
-                        let y = Math.random() * (canvas.height - radius * 2) + radius;
+        //   tournament: IKeys;
+        //   source: IKeys;
+        //   mint?: IKeys;
+        //   dest?: IKeys;
+        //   amount?: number;
 
-                        const meta = new Metadata(data.tokens[i], data.tournament);
-                        bubbles.push(new Bubble(x, y, radius, meta));
-                    }
-                    animate();
-                })
-                .catch(error => console.error('API call failed:', error));
+        function initBubblesData(setupData) {
+            for (let i = 0; i < setupData.tokens.length; i++) {
+                let radius = Math.random() * 30 + 10;
+                let x = Math.random() * (canvas.width - radius * 2) + radius;
+                let y = Math.random() * (canvas.height - radius * 2) + radius;
+
+                const metadata = new Metadata(setupData.tokens[i], setupData.tournament);
+                bubbles.push(new Bubble(x, y, radius, metadata));
+            }
+        }
+
+        async function initBubbles() {
+            const payload = { cmdData: { name: 'bc-2', noTokens: NO_TOKENS } };
+            const setupData = await callApi(SETUP_URL, payload);
+            initBubblesData(setupData);
+        }
+
+        function initAccsData(setupData) {
+            console.log('initAccsData', 'setupData', setupData);
+            accs = setupData;
+        }
+
+        async function initAccs() {
+            const payload = { cmdData: { noAccs: NO_TOKENS } };
+            const setupData = await callApi(CREATE_ACCS_URL, payload);
+            console.log('initAccs', 'setupData', setupData);
+            initAccsData(setupData);
+        }
+
+        async function initLink(acc, metadata) {
+            const payload = { cmdData: { instr: { tournament: metadata.tournament, mint: metadata.token.mint, dest: acc, source: metadata.tournament } } };
+            console.log('initLink()', 'payload', payload);
+            await callApi(TRANSFER_NFT_URL, payload);
+
+            const bubble = bubbles.filter(b => b.metadata.token.indx === metadata.token.indx)[0];
+            bubble.color = getRandomColor();
+            bubble.metadata.token.owner = acc;
+        }
+
+        async function initLinks() {
+            await Promise.all(bubbles.map((v, i) => initLink(accs[i], v.metadata)));
+        }
+
+        async function init() {
+            await Promise.all([initBubbles(), initAccs()])
+            await initLinks();
+            globalInit = true;
+            animate();
         }
 
         function handleSolTransfer(larger, smaller) {
-            const payload = {};
+            const payload = {
+                cmdData: {
+                    instr: {
+                        tournament: larger.metadata.tournament,
+                        source: smaller.metadata.token.owner,
+                        dest: larger.metadata.token.owner,
+                    }
+                }
+            };
+            console.log('handleSolTransfer()', 'payload', payload);
+
             const promiseFactory = () => callApi(TRANSFER_SOL_URL, payload)
                 .then(data => {
                     // remove this promise from queue...
@@ -80,7 +130,18 @@
         }
 
         function handleNftTransfer(larger, smaller) {
-            const payload = {};
+            const payload = {
+                cmdData: {
+                    instr: {
+                        tournament: larger.metadata.tournament,
+                        source: smaller.metadata.token.owner,
+                        dest: larger.metadata.token.owner,
+                        mint: smaller.token.mint,
+                    }
+                }
+            };
+            console.log('handleNftTransfer()', 'payload', payload);
+
             const promiseFactory = () => callApi(TRANSFER_NFT_URL, payload)
                 .then(data => {
                     // remove this promise from queue...
@@ -99,7 +160,7 @@
         }
 
         function handleCollision(b1, b2) {
-            if (Math.random() >= EVT_PROBABILITY) {
+            if (Math.random() >= EVT_PROBABILITY || !globalInit) {
                 return;
             }
 
@@ -132,7 +193,8 @@
                 this.dx = (Math.random() - 0.5) * 2;
                 this.dy = (Math.random() - 0.5) * 2;
                 this.wobbleFactor = Math.random() * 0.2 + 0.1;
-                this.color = getRandomColor();
+                // this.color = getRandomColor();
+                this.color = 'lightgray';
                 this.metadata = metadata;
             }
 
@@ -191,7 +253,11 @@
             requestAnimationFrame(animate);
         }
 
-        init();
+        init()
+            .then(
+                () => console.log('init()', 'DONE!'),
+                err => console.error('init()', 'ERROR', err)
+            );
         // animate();
 
         async function callApi(url, body = null, method = 'POST', headers = {}) {

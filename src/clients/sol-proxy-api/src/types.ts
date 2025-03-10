@@ -26,6 +26,7 @@ export interface IInstruction {
 
 export interface IToken {
   indx: number;
+  owner?: IKeys;
   mint: IKeys;
 }
 

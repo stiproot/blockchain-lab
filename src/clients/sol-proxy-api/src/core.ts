@@ -43,8 +43,58 @@ async function transferNftToTrustedWallet(
   }).sendAndConfirm(umi);
 }
 
-export async function setup(name: string, noOfTokens: number): Promise<ISetupResp> {
+async function createAccount(
+  umi: Umi,
+  connection: Connection,
+  fundingWallet: Web3Keypair,
+  lamports: number,
+  newAccountKeypair: Web3Keypair | null = null
+): Promise<UmiKeypair> {
+  const web3Keypair: Web3Keypair = newAccountKeypair || Web3Keypair.generate();
+  const transaction = new Transaction().add(
+    SystemProgram.createAccount({
+      fromPubkey: fundingWallet.publicKey, // Funding wallet
+      newAccountPubkey: web3Keypair.publicKey,
+      lamports, // Minimum SOL needed
+      space: 0, // Space required
+      programId: SystemProgram.programId, // Assign to system program
+    })
+  );
+  await sendAndConfirmTransaction(connection, transaction, [fundingWallet, web3Keypair]);
+  console.log("Account created:", web3Keypair.publicKey.toBase58());
+  return translateWeb3ToUmiKeypair(umi, web3Keypair);
+}
 
+async function getWalletXKeypair(umi: Umi, indx: number) {
+  const cfg = `wallet-${indx}-keypair.json`
+  const kp: Web3Keypair = await loadKeypairFromCfg(cfg);
+  return translateWeb3ToUmiKeypair(umi, kp);
+}
+
+export async function createAccounts(no: number, useExisting: boolean = true): Promise<Array<IKeys>> {
+  const connection: Connection = createConn();
+  const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
+
+  const umi = buildUmi();
+  const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
+  const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
+  const payerSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
+  umi.use(keypairIdentity(payerSigner));
+
+  const indxs = range(0, no);
+
+  let newAccs = [];
+  if (useExisting) {
+    newAccs = await Promise.all(indxs.map(i => getWalletXKeypair(umi, i)));
+  }
+  else {
+    newAccs = await Promise.all(indxs.map(i => createAccount(umi, connection, walletWeb3Keypair, lamports)));
+  }
+
+  return newAccs.map(na => ({ privKey: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
+}
+
+export async function setup(name: string, noOfTokens: number): Promise<ISetupResp> {
   const connection: Connection = createConn();
 
   // CREATE TOURNAMENT ACC...
@@ -66,6 +116,8 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
   await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
   console.log("Account created:", tournamentWeb3Keypair.publicKey.toBase58());
 
+  const tokenIndxs = range(0, noOfTokens);
+
   // INIT UMI...
   const umi = buildUmi();
   const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
@@ -74,9 +126,7 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
 
   umi.use(keypairIdentity(payerSigner));
 
-  // MINT NFT...
-  const tokenIndxs = range(0, noOfTokens);
-
+  // MINT NFTS...
   const buildTokenName = (tNo: number): string => `${name}:token-${tNo}`;
   const buildTokenUri = (tNo: number): string => `https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg?tournament=${name}&token-${tNo}`;
 
@@ -95,7 +145,12 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
   await Promise.all(transferPromises);
 
   return {
-    tokens: mintAuths.map((v, i) => ({ indx: i, mint: { privKey: JSON.stringify(Array.from(v.secretKey)) } as IKeys } as IToken)),
+    tokens: mintAuths.map((v, i) => ({
+      indx: i,
+      mint: {
+        privKey: JSON.stringify(Array.from(v.secretKey))
+      } as IKeys,
+    } as IToken)),
     tournament: { privKey: JSON.stringify(Array.from(tournamentUmiKeypair.secretKey)) } as IKeys
   } as ISetupResp;
 }
@@ -112,7 +167,7 @@ export async function transferSol(instr: IInstruction) {
   await mplTransferSol(umi, {
     source: sourceUserWalletSigner,
     destination: tournamentSigner.publicKey,
-    amount: sol(instr.amount!),
+    amount: sol(instr.amount || 0.001),
   }).sendAndConfirm(umi);
 
   // Transfer from the trusted wallet to the user's wallet... 
@@ -130,22 +185,22 @@ export async function transferNft(instr: IInstruction) {
   const umi = buildUmi();
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
-
   umi.use(keypairIdentity(tournamentSigner));
-
   const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
 
-  // Transfer NFT from user to trusted wallet...
-  const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
-  await transferV1(umi, {
-    mint: mintSigner.publicKey,
-    authority: sourceUserWalletSigner,
-    tokenOwner: sourceUserWalletSigner.publicKey,
-    destinationOwner: tournamentSigner.publicKey,
-    tokenStandard: TokenStandard.NonFungible,
-  }).sendAndConfirm(umi);
+  if (instr.source.privKey !== instr.tournament.privKey) {
+    // Transfer NFT from source user to trusted wallet...
+    const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
+    await transferV1(umi, {
+      mint: mintSigner.publicKey,
+      authority: sourceUserWalletSigner,
+      tokenOwner: sourceUserWalletSigner.publicKey,
+      destinationOwner: tournamentSigner.publicKey,
+      tokenStandard: TokenStandard.NonFungible,
+    }).sendAndConfirm(umi);
+  }
 
-  // Transfer NFT from user to trusted wallet...
+  // Transfer NFT from trusted wallet to dest user wallet...
   const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest!);
   await transferV1(umi, {
     mint: mintSigner.publicKey,
