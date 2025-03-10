@@ -13,7 +13,7 @@
     "transfer-sol": "ts-node src/transfer-sol.ts",
     "burn-nft": "ts-node src/burn-nft.ts",
     "update-nft": "ts-node src/update-nft.ts",
-    "delegate-workflow": "ts-node src/delegate-workflow2.ts",
+    "delegate-workflow": "ts-node src/delegate-workflow3.ts",
     "setup-workflow": "ts-node src/setup-workflow.ts",
     "burn-workflow": "ts-node src/burn-workflow.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
