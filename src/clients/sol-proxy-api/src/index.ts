@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { procQry } from "./qrys";
-import { procCmd } from "./cmds";
+import { procMintCmd } from "./cmds";
 import { Request, Response } from 'express';
 
 require("dotenv").config();
@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 
 // CMDS...
-app.post(`${BASE_URL}/cmd`, express.json(), procCmd);
+app.post(`${BASE_URL}/cmd/mint`, express.json(), procMintCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);

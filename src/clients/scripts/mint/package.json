@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "create-account": "ts-node src/create-account.ts",
     "create-mint": "ts-node src/create-mint.ts",
     "create-nft": "ts-node src/create-nft.ts",
     "fetch-nft": "ts-node src/fetch-nft.ts",
