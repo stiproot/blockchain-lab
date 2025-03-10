@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { procQry } from "./controllers/qrys";
-import { procCmd } from "./controllers/cmds";
+import { procQry } from "./qrys";
+import { procCmd } from "./cmds";
 import { Request, Response } from 'express';
 
 require("dotenv").config();
