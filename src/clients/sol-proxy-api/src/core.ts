@@ -8,7 +8,8 @@ import {
   Keypair as Web3Keypair,
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair } from './utls';
+import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair, translateInstrKeyToSigner } from './utls';
+import { IInstruction, IKeys, ISetupResp, IToken } from './types';
 
 const range = (start: number, stop: number, step = 1) =>
   Array.from({ length: Math.ceil((stop - start) / step) }, (_, i) => start + i * step);
@@ -42,7 +43,7 @@ async function transferNftToTrustedWallet(
   }).sendAndConfirm(umi);
 }
 
-export async function setup(name: string, noOfTokens: number) {
+export async function setup(name: string, noOfTokens: number): Promise<ISetupResp> {
 
   const connection: Connection = createConn();
 
@@ -80,7 +81,6 @@ export async function setup(name: string, noOfTokens: number) {
   const buildTokenUri = (tNo: number): string => `https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg?tournament=${name}&token-${tNo}`;
 
   const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNft(umi, buildTokenName(ti), buildTokenUri(ti)));
-
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
   // TRANSER...
@@ -93,47 +93,65 @@ export async function setup(name: string, noOfTokens: number) {
   ));
 
   await Promise.all(transferPromises);
+
+  return {
+    tokens: mintAuths.map((v, i) => ({ indx: i, mint: { privKey: JSON.stringify(Array.from(v.secretKey)) } as IKeys } as IToken)),
+    tournament: { privKey: JSON.stringify(Array.from(tournamentUmiKeypair.secretKey)) } as IKeys
+  } as ISetupResp;
 }
 
-export async function transferSol(amount: number) {
-
+export async function transferSol(instr: IInstruction) {
   const umi = buildUmi();
 
-  const walletKeypair = await buildWalletKeypair(umi);
-  const payerSigner = createSignerFromKeypair(umi, walletKeypair);
+  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
 
-  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
-  const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
+  umi.use(keypairIdentity(tournamentSigner));
 
-  umi.use(keypairIdentity(payerSigner));
-
+  // Transfer from user's wallet to trusted wallet...
+  const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
   await mplTransferSol(umi, {
-    source: payerSigner,
-    destination: tournamentUmiKeypair.publicKey,
-    amount: sol(amount),
+    source: sourceUserWalletSigner,
+    destination: tournamentSigner.publicKey,
+    amount: sol(instr.amount!),
   }).sendAndConfirm(umi);
+
+  // Transfer from the trusted wallet to the user's wallet... 
+  const destUserWallet = translateInstrKeyToSigner(umi, instr.dest!);
+  await mplTransferSol(umi, {
+    source: tournamentSigner,
+    destination: destUserWallet.publicKey,
+    amount: sol(instr.amount!),
+  }).sendAndConfirm(umi);
+
+  return {};
 }
 
-export async function transferNft(destinationPubKey: string, mintPubKey: string) {
+export async function transferNft(instr: IInstruction) {
   const umi = buildUmi();
 
-  const walletKeypair = await buildWalletKeypair(umi);
-  const payerSigner = createSignerFromKeypair(umi, walletKeypair);
+  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
 
-  umi.use(keypairIdentity(payerSigner));
+  umi.use(keypairIdentity(tournamentSigner));
 
-  const newOwner = publicKey(destinationPubKey);
+  const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
 
-  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
-  const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
-
-  const mint = publicKey(mintPubKey);
-
+  // Transfer NFT from user to trusted wallet...
+  const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
   await transferV1(umi, {
-    mint,
-    authority: payerSigner,
-    tokenOwner: tournamentUmiKeypair.publicKey,
-    destinationOwner: newOwner,
+    mint: mintSigner.publicKey,
+    authority: sourceUserWalletSigner,
+    tokenOwner: sourceUserWalletSigner.publicKey,
+    destinationOwner: tournamentSigner.publicKey,
+    tokenStandard: TokenStandard.NonFungible,
+  }).sendAndConfirm(umi);
+
+  // Transfer NFT from user to trusted wallet...
+  const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest!);
+  await transferV1(umi, {
+    mint: mintSigner.publicKey,
+    authority: tournamentSigner,
+    tokenOwner: tournamentSigner.publicKey,
+    destinationOwner: destUserWalletSigner.publicKey,
     tokenStandard: TokenStandard.NonFungible,
   }).sendAndConfirm(umi);
 }

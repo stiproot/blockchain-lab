@@ -1,4 +1,4 @@
-import { IReq, ICmd } from './types';
+import { IReq, ICmd, IInstruction } from './types';
 import { Response } from 'express';
 import { setup, transferNft, transferSol } from './core';
 
@@ -6,28 +6,28 @@ export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procSetupCmd START.`);
 
   const { name, noTokens }: { name: string, noTokens: number } = req.body.cmdData;
-  await setup(name, noTokens);
+  const resp = await setup(name, noTokens);
 
   console.info(`procSetupCmd END.`);
-  res.status(200).send('OK');
+  res.status(200).json(resp);
 };
 
 export const procTransferSol = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procTransferSol START.`);
 
-  const { amount }: { amount: number } = req.body.cmdData;
-  await transferSol(amount);
+  const { instr }: { instr: IInstruction } = req.body.cmdData;
+  const resp = await transferSol(instr);
 
   console.info(`procTransferSol END.`);
-  res.status(200).send('OK');
+  res.status(200).json(resp);
 };
 
 export const procTransferNft = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procTransferNft START.`);
 
-  const { destinationPubKey, mintPubKey }: { destinationPubKey: string, mintPubKey: string } = req.body.cmdData;
-  await transferNft(destinationPubKey, mintPubKey);
+  const { instr }: { instr: IInstruction } = req.body.cmdData;
+  const resp = await transferNft(instr);
 
   console.info(`procTransferNft END.`);
-  res.status(200).send('OK');
+  res.status(200).json(resp);
 };

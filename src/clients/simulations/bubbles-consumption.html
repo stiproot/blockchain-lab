@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bubbleCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('bubbleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const EVT_PROBABILITY = 0.05;
+        const RADIUS_INCREASE_UNIT = 5;
+        const API_HOST_URL = 'http://localhost:3001';
+        const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
+        const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
+        const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
+        const NO_TOKENS = 3;
+        let bubbles = [];
+
+        function getRandomColor() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return `rgba(${r}, ${g}, ${b}, 0.8)`;
+        }
+
+        async function init() {
+            bubbles = [];
+            const payload = { cmdData: { name: 'bc-2', noTokens: 3 } };
+            callApi(SETUP_URL, payload)
+                .then(data => {
+                    console.log('data', data);
+                    for (let i = 0; i < NO_TOKENS; i++) {
+                        let radius = Math.random() * 30 + 10;
+                        let x = Math.random() * (canvas.width - radius * 2) + radius;
+                        let y = Math.random() * (canvas.height - radius * 2) + radius;
+
+                        const meta = new Metadata(data.tokens[i], data.tournament);
+                        bubbles.push(new Bubble(x, y, radius, meta));
+                    }
+                    animate();
+                })
+                .catch(error => console.error('API call failed:', error));
+        }
+
+        function handleSolTransfer(larger, smaller) {
+            const payload = {};
+            const promiseFactory = () => callApi(TRANSFER_SOL_URL, payload)
+                .then(data => {
+                    // remove this promise from queue...
+                    promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
+                    // kickoff the next one...
+                    if (promiseQueue.length) {
+                        promiseQueue[0]();
+                    }
+                })
+                .catch(error => console.error('API call failed:', error));
+
+            if (!promiseQueue.length) {
+                promiseQueue.push(promiseFactory);
+                promiseQueue[0]();
+            }
+        }
+
+        function handleNftTransfer(larger, smaller) {
+            const payload = {};
+            const promiseFactory = () => callApi(TRANSFER_NFT_URL, payload)
+                .then(data => {
+                    // remove this promise from queue...
+                    promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
+                    // kickoff the next one...
+                    if (promiseQueue.length) {
+                        promiseQueue[0]();
+                    }
+                })
+                .catch(error => console.error('API call failed:', error));
+
+            if (!promiseQueue.length) {
+                promiseQueue.push(promiseFactory);
+                promiseQueue[0]();
+            }
+        }
+
+        function handleCollision(b1, b2) {
+            if (Math.random() >= EVT_PROBABILITY) {
+                return;
+            }
+
+            let larger = b1.radius > b2.radius ? b1 : b2;
+            let smaller = b1.radius > b2.radius ? b2 : b1;
+
+            // Larger radius increases by that of smaller...
+            larger.radius += RADIUS_INCREASE_UNIT;
+            bubbles = bubbles.filter(b => b !== smaller);
+
+            // Transfer SOL to bigger...
+            handleSolTransfer(larger, smaller);
+
+            // Transfer NFT to smaller...
+            handleNftTransfer(larger, smaller);
+        }
+
+        class Metadata {
+            constructor(token, tournament) {
+                this.token = token;
+                this.tournament = tournament;
+            }
+        }
+
+        class Bubble {
+            constructor(x, y, radius, metadata) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.dx = (Math.random() - 0.5) * 2;
+                this.dy = (Math.random() - 0.5) * 2;
+                this.wobbleFactor = Math.random() * 0.2 + 0.1;
+                this.color = getRandomColor();
+                this.metadata = metadata;
+            }
+
+            move() {
+                this.x += this.dx;
+                this.y += this.dy;
+                this.dx += (Math.random() - 0.5) * this.wobbleFactor;
+                this.dy += (Math.random() - 0.5) * this.wobbleFactor;
+                this.handleBorderCollision();
+            }
+
+            handleBorderCollision() {
+                if (this.x - this.radius <= 0 || this.x + this.radius >= canvas.width) this.dx *= -1;
+                if (this.y - this.radius <= 0 || this.y + this.radius >= canvas.height) this.dy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, this.radius * 0.3,
+                    this.x, this.y, this.radius
+                );
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+                ctx.fillStyle = gradient;
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.stroke();
+            }
+        }
+
+        function detectCollisions() {
+            for (let i = 0; i < bubbles.length; i++) {
+                for (let j = i + 1; j < bubbles.length; j++) {
+                    let b1 = bubbles[i];
+                    let b2 = bubbles[j];
+                    let dx = b2.x - b1.x;
+                    let dy = b2.y - b1.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < b1.radius + b2.radius) {
+                        handleCollision(b1, b2);
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            bubbles.forEach(bubble => {
+                bubble.move();
+                bubble.draw();
+            });
+            detectCollisions();
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        // animate();
+
+        async function callApi(url, body = null, method = 'POST', headers = {}) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    },
+                    body: body ? JSON.stringify(body) : null
+                };
+
+                const response = await fetch(url, options);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error:', error);
+                throw error;
+            }
+        }
+
+    </script>
+</body>
+
+</html>

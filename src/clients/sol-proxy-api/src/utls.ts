@@ -2,13 +2,14 @@ import {
     Connection,
     Keypair as Web3Keypair,
 } from '@solana/web3.js';
-import { Keypair as UmiKeypair, Umi } from '@metaplex-foundation/umi';
+import { Keypair as UmiKeypair, Umi, createSignerFromKeypair, KeypairSigner } from '@metaplex-foundation/umi';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import { mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata'
 import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
+import { IKeys } from './types';
 
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
@@ -49,6 +50,14 @@ export async function buildWalletKeypair(umi: Umi): Promise<UmiKeypair> {
 export function translateWeb3ToUmiKeypair(umi: Umi, kp: Web3Keypair): UmiKeypair {
     return umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 }
+
+export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner {
+    return createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(new Uint8Array(JSON.parse(keys.privKey))));
+}
+
+// export function translateInstrKeyToSigner(umi: Umi, keys: IKeys) {
+//     return createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(new Uint8Array(JSON.parse(keys.privKey))));
+// }
 
 export const createConn = () => new Connection('http://127.0.0.1:8899', 'confirmed');
 export const createDevConn = () => new Connection('https://api.devnet.solana.com', 'confirmed');
