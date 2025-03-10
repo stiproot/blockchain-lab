@@ -1,13 +1,14 @@
 import { IReq, ICmd } from './types';
 import { Response } from 'express';
-import { }
+import { setup } from './core';
 
 export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procSetupCmd START.`);
 
-  // const { id }: { userId: string } = req.body.cmdData;
+  const { name, noTokens }: { name: string, noTokens: number } = req.body.cmdData;
+  await setup(name, noTokens);
 
-  console.info("Processed cmd.");
-
+  console.info(`procSetupCmd END.`);
   res.status(200).send('OK');
 };
 
