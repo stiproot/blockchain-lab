@@ -1,6 +1,6 @@
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair } from './utls';
-import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, publicKey, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
-import { burnV1, createNft, delegateStandardV1, fetchDigitalAssetWithAssociatedToken, TokenStandard, transferV1, updateV1 } from '@metaplex-foundation/mpl-token-metadata';
+import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   Connection,
   sendAndConfirmTransaction,
@@ -8,8 +8,6 @@ import {
   Transaction,
   Keypair as Web3Keypair,
 } from '@solana/web3.js';
-import { createAccount } from './create-account';
-
 
 async function main() {
 
@@ -20,6 +18,7 @@ async function main() {
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
   const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
 
+  console.log("Attempting account creation...")
   const transaction = new Transaction().add(
     SystemProgram.createAccount({
       fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
@@ -42,26 +41,35 @@ async function main() {
   umi.use(keypairIdentity(payerSigner));
 
   // MINT NFT...
-  const mint: KeypairSigner = generateSigner(umi);
+  const mints: Array<KeypairSigner> = [];
 
-  console.log("Attempting mint asset...");
-  await createNft(umi, {
-    mint,
-    name: 'scorpion-nft-001',
-    uri: 'https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg',
-    sellerFeeBasisPoints: percentAmount(5.5),
-    // updateAuthority: delegateAuthority,
-    isMutable: true,
-  }).sendAndConfirm(umi);
+  for (var i in [1, 2, 3]) {
+    console.log("Attempting mint asset...");
+    const mint: KeypairSigner = generateSigner(umi);
+
+    await createNft(umi, {
+      mint,
+      name: 'scorpion-nft-001',
+      uri: 'https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg',
+      sellerFeeBasisPoints: percentAmount(5.5),
+      // updateAuthority: delegateAuthority,
+      isMutable: true,
+    }).sendAndConfirm(umi);
+
+    mints.push(mint);
+  }
 
   // TRANSER...
-  await transferV1(umi, {
-    mint: mint.publicKey,
-    authority: payerSigner,
-    tokenOwner: walletUmiKeypair.publicKey,
-    destinationOwner: tournamentUmiKeypair.publicKey,
-    tokenStandard: TokenStandard.NonFungible,
-  }).sendAndConfirm(umi);
+  for (const mint of mints) {
+    console.log("Attempting asset transfer...")
+    await transferV1(umi, {
+      mint: mint.publicKey,
+      authority: payerSigner,
+      tokenOwner: walletUmiKeypair.publicKey,
+      destinationOwner: tournamentUmiKeypair.publicKey,
+      tokenStandard: TokenStandard.NonFungible,
+    }).sendAndConfirm(umi);
+  }
 
   // DELEGATE...
   // const delegateKeypair = umi.eddsa.createKeypairFromSecretKey(tournamentWeb3Keypair.secretKey);
@@ -83,8 +91,6 @@ async function main() {
   //   authority: payerSigner,
   //   newUpdateAuthority: delegateAuthority.publicKey,
   // }).sendAndConfirm(umi);
-
-
 }
 
 main().then(() => {

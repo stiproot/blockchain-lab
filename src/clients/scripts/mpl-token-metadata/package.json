@@ -18,6 +18,7 @@
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
     "sol-keygen-delegate": "solana-keygen new -o .cfg/delegate-keypair.json --force",
     "sol-keygen-wallet-x": "solana-keygen new -o .cfg/wallet-x-keypair.json --force",
+    "sol-tournament-keygen": "solana-keygen new -o .cfg/tournament-keypair.json --force",
     "build": "tsc",
     "start": "node dist/index.js",
     "fix": "npx eslint src/ --fix"
