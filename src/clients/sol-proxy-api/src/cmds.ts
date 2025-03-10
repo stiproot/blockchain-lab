@@ -1,6 +1,6 @@
 import { IReq, ICmd } from './types';
 import { Response } from 'express';
-import { setup } from './core';
+import { setup, transferNft, transferSol } from './core';
 
 export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procSetupCmd START.`);
@@ -12,11 +12,22 @@ export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   res.status(200).send('OK');
 };
 
-export const procCmd = async (req: IReq<ICmd>, res: Response) => {
+export const procTransferSol = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procTransferSol START.`);
 
-  // const { id }: { userId: string } = req.body.cmdData;
+  const { amount }: { amount: number } = req.body.cmdData;
+  await transferSol(amount);
 
-  console.info("Processed cmd.");
+  console.info(`procTransferSol END.`);
+  res.status(200).send('OK');
+};
 
+export const procTransferNft = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procTransferNft START.`);
+
+  const { destinationPubKey, mintPubKey }: { destinationPubKey: string, mintPubKey: string } = req.body.cmdData;
+  await transferNft(destinationPubKey, mintPubKey);
+
+  console.info(`procTransferNft END.`);
   res.status(200).send('OK');
 };

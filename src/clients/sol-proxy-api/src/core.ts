@@ -1,4 +1,4 @@
-import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, PublicKey, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, publicKey, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
 import { createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   Connection,
@@ -7,6 +7,7 @@ import {
   Transaction,
   Keypair as Web3Keypair,
 } from '@solana/web3.js';
+import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair } from './utls';
 
 const range = (start: number, stop: number, step = 1) =>
@@ -24,7 +25,7 @@ async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigne
   return mint;
 }
 
-async function transferNft(
+async function transferNftToTrustedWallet(
   umi: Umi,
   mintPubKey: PublicKey,
   authorityKeySigner: KeypairSigner,
@@ -83,7 +84,7 @@ export async function setup(name: string, noOfTokens: number) {
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
   // TRANSER...
-  const transferPromises = mintAuths.map(ma => transferNft(
+  const transferPromises = mintAuths.map(ma => transferNftToTrustedWallet(
     umi,
     ma.publicKey,
     payerSigner,
@@ -92,4 +93,47 @@ export async function setup(name: string, noOfTokens: number) {
   ));
 
   await Promise.all(transferPromises);
+}
+
+export async function transferSol(amount: number) {
+
+  const umi = buildUmi();
+
+  const walletKeypair = await buildWalletKeypair(umi);
+  const payerSigner = createSignerFromKeypair(umi, walletKeypair);
+
+  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
+  const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
+
+  umi.use(keypairIdentity(payerSigner));
+
+  await mplTransferSol(umi, {
+    source: payerSigner,
+    destination: tournamentUmiKeypair.publicKey,
+    amount: sol(amount),
+  }).sendAndConfirm(umi);
+}
+
+export async function transferNft(destinationPubKey: string, mintPubKey: string) {
+  const umi = buildUmi();
+
+  const walletKeypair = await buildWalletKeypair(umi);
+  const payerSigner = createSignerFromKeypair(umi, walletKeypair);
+
+  umi.use(keypairIdentity(payerSigner));
+
+  const newOwner = publicKey(destinationPubKey);
+
+  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
+  const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
+
+  const mint = publicKey(mintPubKey);
+
+  await transferV1(umi, {
+    mint,
+    authority: payerSigner,
+    tokenOwner: tournamentUmiKeypair.publicKey,
+    destinationOwner: newOwner,
+    tokenStandard: TokenStandard.NonFungible,
+  }).sendAndConfirm(umi);
 }
