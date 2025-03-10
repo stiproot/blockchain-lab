@@ -1,5 +1,4 @@
-import { buildWalletKeypair } from './utls';
-import { buildUmi } from './factories';
+import { buildUmi, buildWalletKeypair } from './utls';
 import { createSignerFromKeypair, generateSigner, keypairIdentity, percentAmount, some } from '@metaplex-foundation/umi';
 import { createNft, fetchMetadataFromSeeds, updateV1 } from '@metaplex-foundation/mpl-token-metadata';
 

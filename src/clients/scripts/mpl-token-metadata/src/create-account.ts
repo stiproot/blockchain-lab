@@ -1,5 +1,5 @@
 import { Connection, clusterApiUrl, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
-import { buildWalletKeypair, loadDefaultWalletKeypair } from "./utls";
+import { loadDefaultWalletKeypair } from "./utls";
 
 // 1. Connect to the Solana network (devnet/mainnet)
 const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
@@ -11,7 +11,7 @@ const newAccount = Keypair.generate();
 console.log("New Account Public Key:", newAccount.publicKey.toBase58());
 
 // 3. Fund the new account (send SOL from a funded wallet)
-async function createAccount() {
+export async function createAccount() {
 
   const walletKeypair = await loadDefaultWalletKeypair();
 
@@ -30,7 +30,6 @@ async function createAccount() {
   await sendAndConfirmTransaction(connection, transaction, [walletKeypair, newAccount]);
   console.log("Account created:", newAccount.publicKey.toBase58());
 }
-
 
 createAccount().then(() => {
   console.log("Done.");

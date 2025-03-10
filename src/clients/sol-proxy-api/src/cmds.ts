@@ -1,7 +1,8 @@
 import { IReq, ICmd } from './types';
 import { Response } from 'express';
+import { }
 
-export const procMintCmd = async (req: IReq<ICmd>, res: Response) => {
+export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
 
   // const { id }: { userId: string } = req.body.cmdData;
 

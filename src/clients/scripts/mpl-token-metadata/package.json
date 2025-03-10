@@ -14,6 +14,7 @@
     "burn-nft": "ts-node src/burn-nft.ts",
     "update-nft": "ts-node src/update-nft.ts",
     "delegate-workflow": "ts-node src/delegate-workflow2.ts",
+    "setup-workflow": "ts-node src/setup-workflow.ts",
     "sol-keygen": "solana-keygen new -o .cfg/tmp-keypair.json --force",
     "sol-keygen-delegate": "solana-keygen new -o .cfg/delegate-keypair.json --force",
     "sol-keygen-wallet-x": "solana-keygen new -o .cfg/wallet-x-keypair.json --force",

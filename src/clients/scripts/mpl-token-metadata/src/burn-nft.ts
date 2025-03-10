@@ -1,5 +1,4 @@
-import { buildWalletKeypair, loadKeypairFromCfg } from './utls';
-import { buildUmi } from './factories';
+import { buildUmi, buildWalletKeypair, loadKeypairFromCfg } from './utls';
 import { createSignerFromKeypair, keypairIdentity, publicKey } from '@metaplex-foundation/umi';
 import { burnV1, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 

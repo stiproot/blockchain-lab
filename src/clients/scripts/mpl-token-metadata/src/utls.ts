@@ -3,6 +3,8 @@ import {
     Keypair as Web3Keypair,
 } from '@solana/web3.js';
 import { Keypair as UmiKeypair, Umi } from '@metaplex-foundation/umi';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
+import { mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata'
 import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
@@ -44,5 +46,11 @@ export async function buildWalletKeypair(umi: Umi): Promise<UmiKeypair> {
     return umiKeypair;
 }
 
+export function translateWeb3ToUmiKeypair(umi: Umi, kp: Web3Keypair): UmiKeypair {
+    return umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
+}
+
 export const createConn = () => new Connection('http://127.0.0.1:8899', 'confirmed');
 export const createDevConn = () => new Connection('https://api.devnet.solana.com', 'confirmed');
+
+export const buildUmi = () => createUmi('http://127.0.0.1:8899').use(mplTokenMetadata());
