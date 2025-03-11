@@ -1,4 +1,6 @@
 import {
+    Cluster,
+    clusterApiUrl,
     Connection,
     Keypair as Web3Keypair,
 } from '@solana/web3.js';
@@ -9,6 +11,8 @@ import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
+
+require("dotenv").config();
 
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
@@ -50,7 +54,20 @@ export function translateWeb3ToUmiKeypair(umi: Umi, kp: Web3Keypair): UmiKeypair
     return umi.eddsa.createKeypairFromSecretKey(kp.secretKey);
 }
 
-export const createConn = () => new Connection('http://127.0.0.1:8899', 'confirmed');
-export const createDevConn = () => new Connection('https://api.devnet.solana.com', 'confirmed');
+export function getClusterUrl(): string {
+    if (process.env.SOLNET === 'localnet') {
+        return 'http://localhost:8899';
+    }
 
-export const buildUmi = () => createUmi('http://127.0.0.1:8899').use(mplTokenMetadata());
+    if (process.env.SOLNET === 'alchemy') {
+        return process.env.ALCHEMY_URL!;
+    }
+
+    if (process.env.SOLNET === 'helius') {
+        return process.env.HELIUS_URL!;
+    }
+
+    return clusterApiUrl(process.env.SOLNET as Cluster);
+}
+export const buildUmi = () => createUmi(getClusterUrl()).use(mplTokenMetadata());
+export const createConn = () => new Connection(getClusterUrl(), 'confirmed');

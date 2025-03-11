@@ -1,21 +1,15 @@
-import { Connection, clusterApiUrl, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
-import { loadDefaultWalletKeypair } from "./utls";
+import { Keypair, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import { createConn, loadDefaultWalletKeypair, loadKeypairFromCfg } from "./utls";
 
-// 1. Connect to the Solana network (devnet/mainnet)
-const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+const connection = createConn();
+// const newAccount = Keypair.generate();
 
-
-// 2. Generate a new Keypair (this is your new account)
-const newAccount = Keypair.generate();
-
-console.log("New Account Public Key:", newAccount.publicKey.toBase58());
-
-// 3. Fund the new account (send SOL from a funded wallet)
 export async function createAccount() {
-
   const walletKeypair = await loadDefaultWalletKeypair();
-
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
+
+  const newAccount = await loadKeypairFromCfg('tournament-keypair.json');
+  console.log("New Account Public Key:", newAccount.publicKey.toBase58());
 
   const transaction = new Transaction().add(
     SystemProgram.createAccount({

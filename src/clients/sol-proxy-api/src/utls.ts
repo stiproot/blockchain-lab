@@ -63,10 +63,22 @@ export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner 
     return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, new Uint8Array(JSON.parse(keys.pk))));
 }
 
-export const getClusterUrl = (): string => process.env.SOLNET === 'localnet' ? 'http://localhost:8899' : clusterApiUrl(process.env.SOLNET as Cluster);
+export function getClusterUrl(): string {
+    if (process.env.SOLNET === 'localnet') {
+        return 'http://localhost:8899';
+    }
 
+    if (process.env.SOLNET === 'alchemy') {
+        return process.env.ALCHEMY_URL!;
+    }
+
+    if (process.env.SOLNET === 'helius') {
+        return process.env.HELIUS_URL!;
+    }
+
+    return clusterApiUrl(process.env.SOLNET as Cluster);
+}
 export const buildUmi = () => createUmi(getClusterUrl()).use(mplTokenMetadata());
-
 export const createConn = () => new Connection(getClusterUrl(), 'confirmed');
 
 export const range = (start: number, stop: number, step = 1) =>

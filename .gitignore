@@ -14,10 +14,12 @@ Cargo.lock
 *.pdb
 
 OUTPUT.md
+LAB.md
 
 node_modules/
 
 .cfg/
+.env
 
 package-lock.json
 

@@ -1,18 +1,17 @@
-import { buildUmi, buildWalletKeypair } from './utls';
+import { buildUmi, loadKeypairFromCfg, translateWeb3ToUmiKeypair } from './utls';
 import { createSignerFromKeypair, generateSigner, keypairIdentity, percentAmount } from '@metaplex-foundation/umi';
 import { createNft } from '@metaplex-foundation/mpl-token-metadata';
 
 
 async function main() {
-
   const umi = buildUmi();
 
-  const walletKeypair = await buildWalletKeypair(umi);
-  const payerSigner = createSignerFromKeypair(umi, walletKeypair);
-  const mintAuthoritySigner = createSignerFromKeypair(umi, walletKeypair);
-  console.log('mint-authority-public-key:', mintAuthoritySigner.publicKey);
+  // const walletKeypair = await buildWalletKeypair(umi);
+  const walletKp = await loadKeypairFromCfg('tournament-keypair.json');
+  const walletUmiKp = translateWeb3ToUmiKeypair(umi, walletKp);
+  const walletSigner = createSignerFromKeypair(umi, walletUmiKp);
 
-  umi.use(keypairIdentity(payerSigner));
+  umi.use(keypairIdentity(walletSigner));
 
   const mint = generateSigner(umi);
   console.log(mint.publicKey);
