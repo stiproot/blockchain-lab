@@ -10,8 +10,9 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr } from './utls';
+import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri } from './utls';
 import { IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
+import { DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
 async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
@@ -70,7 +71,7 @@ async function getWalletKeypairFromFile(umi: Umi, indx: number): Promise<UmiKeyp
   return createUmiKeypairFromSecretKey(umi, kp.secretKey);
 }
 
-async function airdropSol(recipientPubKey: string, amountSol: number) {
+async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {
   const connection: Connection = createConn();
   const signature = await connection.requestAirdrop(
     new Web3PublicKey(recipientPubKey),
@@ -103,7 +104,7 @@ export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
   }
 
   if (instr.fundAccs) {
-    await Promise.all(newAccs.map(a => airdropSol(a.publicKey.toString(), 3)));
+    await Promise.all(newAccs.map(a => airdropSol(a.publicKey.toString())));
   }
 
   return newAccs.map(na => ({ pk: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
@@ -116,7 +117,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
 
-  const tournamentWeb3Keypair: Web3Keypair = instr.useExisting ? await loadKeypairFromCfg('tournament-keypair.json') : Web3Keypair.generate();
+  const tournamentWeb3Keypair: Web3Keypair = instr.useExisting ? await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG) : Web3Keypair.generate();
 
   if (!instr.useExisting) {
     console.log("Attempting account creation...")
@@ -131,7 +132,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
     );
     await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
     if (instr.fundAcc) {
-      await airdropSol(tournamentWeb3Keypair.publicKey.toString(), 3);
+      await airdropSol(tournamentWeb3Keypair.publicKey.toString(), DEFAULT_SOL_FUND_AMT);
     }
   }
 
@@ -149,10 +150,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   umi.use(keypairIdentity(walletSigner));
 
   // MINT NFTS...
-  const buildTokenName = (tNo: number): string => `${instr.name}:token-${tNo}`;
-  const buildTokenUri = (tNo: number): string => `https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg?tournament=${instr.name}&token-${tNo}`;
-
-  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNft(umi, buildTokenName(ti), buildTokenUri(ti)));
+  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNft(umi, buildTokenName(instr.name, ti), buildTokenUri(instr.name, ti)));
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
   // TRANSER...
@@ -184,14 +182,13 @@ export async function transferSol(instr: ITransferSolInstr) {
 
   umi.use(keypairIdentity(tournamentSigner));
 
-  const defaultSolAmount = 0.001;
 
   // Transfer from user's wallet to trusted wallet...
   const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
   await mplTransferSol(umi, {
     source: sourceUserWalletSigner,
     destination: tournamentSigner.publicKey,
-    amount: sol(instr.amount || defaultSolAmount),
+    amount: sol(instr.amount || DEFAULT_SOL_TRANSFER_AMT),
   }).sendAndConfirm(umi);
 
   // Transfer from the trusted wallet to the user's wallet... 
@@ -199,7 +196,7 @@ export async function transferSol(instr: ITransferSolInstr) {
   await mplTransferSol(umi, {
     source: tournamentSigner,
     destination: destUserWallet.publicKey,
-    amount: sol(instr.amount! || defaultSolAmount),
+    amount: sol(instr.amount! || DEFAULT_SOL_TRANSFER_AMT),
   }).sendAndConfirm(umi);
 
   return {};

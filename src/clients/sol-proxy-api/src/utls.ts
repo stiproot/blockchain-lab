@@ -12,6 +12,7 @@ import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
 import { IKeys } from './types';
+import { DEFAULT_NFT_URL } from './consts';
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
     os.homedir(),
@@ -70,3 +71,6 @@ export const createConn = () => new Connection(getClusterUrl(), 'confirmed');
 
 export const range = (start: number, stop: number, step = 1) =>
     Array.from({ length: Math.ceil((stop - start) / step) }, (_, i) => start + i * step);
+
+export const buildTokenName = (name: string, tNo: number): string => `${name}:token-${tNo}`;
+export const buildTokenUri = (name: string, tNo: number): string => `${DEFAULT_NFT_URL}?tournament=${name}&token-${tNo}`;
