@@ -10,11 +10,9 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair, translateInstrKeyToSigner } from './utls';
-import { IInstr, IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
+import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr } from './utls';
+import { IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
 
-const range = (start: number, stop: number, step = 1) =>
-  Array.from({ length: Math.ceil((stop - start) / step) }, (_, i) => start + i * step);
 
 async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
   const mint: KeypairSigner = signer || generateSigner(umi);
@@ -64,13 +62,12 @@ async function createAccount(
   );
   await sendAndConfirmTransaction(connection, transaction, [fundingWallet, web3Keypair]);
   console.log("Account created:", web3Keypair.publicKey.toBase58());
-  return translateWeb3ToUmiKeypair(umi, web3Keypair);
+  return createUmiKeypairFromSecretKey(umi, web3Keypair.secretKey);
 }
 
-async function getWalletXKeypair(umi: Umi, indx: number) {
-  const cfg = `wallet-${indx}-keypair.json`
-  const kp: Web3Keypair = await loadKeypairFromCfg(cfg);
-  return translateWeb3ToUmiKeypair(umi, kp);
+async function getWalletKeypairFromFile(umi: Umi, indx: number): Promise<UmiKeypair> {
+  const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
+  return createUmiKeypairFromSecretKey(umi, kp.secretKey);
 }
 
 async function airdropSol(recipientPubKey: string, amountSol: number) {
@@ -99,7 +96,7 @@ export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
 
   let newAccs = [];
   if (instr.useExisting) {
-    newAccs = await Promise.all(indxs.map(i => getWalletXKeypair(umi, i)));
+    newAccs = await Promise.all(indxs.map(i => getWalletKeypairFromFile(umi, i)));
   }
   else {
     newAccs = await Promise.all(indxs.map(i => createAccount(umi, connection, walletWeb3Keypair, lamports)));
@@ -147,7 +144,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
   const walletSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
 
-  const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
+  const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
 
   umi.use(keypairIdentity(walletSigner));
 
@@ -173,17 +170,17 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
     tokens: mintAuths.map((v, i) => ({
       indx: i,
       mint: {
-        pk: JSON.stringify(Array.from(v.secretKey))
+        pk: uint8ArrayToStr(v.secretKey)
       } as IKeys,
     } as IToken)),
-    tournament: { pk: JSON.stringify(Array.from(tournamentUmiKeypair.secretKey)) } as IKeys
+    tournament: { pk: uint8ArrayToStr(tournamentUmiKeypair.secretKey) } as IKeys
   } as ISetupResp;
 }
 
 export async function transferSol(instr: ITransferSolInstr) {
   const umi = buildUmi();
 
-  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
+  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
 
   umi.use(keypairIdentity(tournamentSigner));
 
@@ -211,7 +208,7 @@ export async function transferSol(instr: ITransferSolInstr) {
 export async function transferNft(instr: ITransferNftInstr) {
   const umi = buildUmi();
 
-  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
+  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
   umi.use(keypairIdentity(tournamentSigner));
   const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
 
