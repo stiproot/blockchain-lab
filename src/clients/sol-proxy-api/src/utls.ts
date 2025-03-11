@@ -62,7 +62,7 @@ export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner 
     return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, new Uint8Array(JSON.parse(keys.pk))));
 }
 
-export const getClusterUrl = (): string => clusterApiUrl(process.env.SOLNET as Cluster);
+export const getClusterUrl = (): string => process.env.SOLNET === 'localnet' ? 'http://localhost:8899' : clusterApiUrl(process.env.SOLNET as Cluster);
 
 export const buildUmi = () => createUmi(getClusterUrl()).use(mplTokenMetadata());
 
