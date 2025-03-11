@@ -13,24 +13,45 @@ export interface ICmd {
 }
 
 export interface IKeys {
-  privKey: string;
+  pk: string;
 }
 
-export interface IInstruction {
+export interface IInstr {
+  id: string;
+}
+
+export interface ISetupInstr extends IInstr {
+  name: string;
+  noTokens: number;
+  useExisting: boolean;
+}
+
+export interface ISetupAccsInstr extends IInstr {
+  noAccs: number;
+  useExisting: boolean;
+}
+
+export interface ISetupResp {
+  tokens: Array<IToken>;
+  tournament: IKeys;
+}
+
+export interface ITransferSolInstr extends IInstr {
   tournament: IKeys;
   source: IKeys;
-  mint?: IKeys;
-  dest?: IKeys;
-  amount?: number;
+  dest: IKeys;
+  amount: number;
+}
+
+export interface ITransferNftInstr extends IInstr {
+  tournament: IKeys;
+  source: IKeys;
+  dest: IKeys;
+  mint: IKeys;
 }
 
 export interface IToken {
   indx: number;
   owner?: IKeys;
   mint: IKeys;
-}
-
-export interface ISetupResp {
-  tokens: Array<IToken>;
-  tournament: IKeys;
 }

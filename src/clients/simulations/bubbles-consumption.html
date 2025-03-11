@@ -37,7 +37,7 @@
         let accs = [];
         let globalInit = false;
         let globalQInit = false;
-        let promiseQueue = [];
+        let promiseQ = [];
 
         const newId = () => Math.floor(Math.random() * 1000);
 
@@ -60,7 +60,13 @@
         }
 
         async function initBubbles() {
-            const payload = { cmdData: { name: 'bc-2', noTokens: NO_TOKENS } };
+            const payload = {
+                cmdData: {
+                    instr: {
+                        name: 'bc-2', noTokens: NO_TOKENS,
+                    }
+                }
+            };
             const setupData = await callApi(SETUP_URL, payload);
             initBubblesData(setupData);
         }
@@ -71,14 +77,30 @@
         }
 
         async function initAccs() {
-            const payload = { cmdData: { noAccs: NO_TOKENS } };
+            const payload = {
+                cmdData: {
+                    instr: {
+                        noAccs: NO_TOKENS,
+                        useExisting: true,
+                    }
+                }
+            };
             const setupData = await callApi(CREATE_ACCS_URL, payload);
             console.log('initAccs', 'setupData', setupData);
             initAccsData(setupData);
         }
 
         async function initLink(acc, metadata) {
-            const payload = { cmdData: { instr: { tournament: metadata.tournament, mint: metadata.token.mint, dest: acc, source: metadata.tournament } } };
+            const payload = {
+                cmdData: {
+                    instr: {
+                        tournament: metadata.tournament,
+                        mint: metadata.token.mint,
+                        dest: acc, source: metadata.tournament,
+                        useExisting: true
+                    }
+                }
+            };
             console.log('initLink()', 'payload', payload);
             await callApi(TRANSFER_NFT_URL, payload);
 
@@ -114,10 +136,10 @@
                 .then(data => {
                     console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
-                    promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
+                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
                     // kickoff the next one...
-                    if (promiseQueue.length) {
-                        promiseQueue[0].fn();
+                    if (promiseQ.length) {
+                        promiseQ[0].fn();
                     }
                 })
                 .catch(error => console.error('API call failed:', error));
@@ -142,10 +164,10 @@
                 .then(data => {
                     console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
-                    promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
+                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
                     // kickoff the next one...
-                    if (promiseQueue.length) {
-                        promiseQueue[0].fn();
+                    if (promiseQ.length) {
+                        promiseQ[0].fn();
                     }
                 })
                 .catch(error => console.error('API call failed:', error));
@@ -157,11 +179,11 @@
             const solT = buildSolTransfer(smaller, larger);
             const nftT = buildNftTransfer(smaller, larger);
 
-            promiseQueue.push(solT);
-            promiseQueue.push(nftT);
+            promiseQ.push(solT);
+            promiseQ.push(nftT);
 
             if (!globalQInit) {
-                promiseQueue[0].fn();
+                promiseQ[0].fn();
                 globalQInit = true;
             }
         }

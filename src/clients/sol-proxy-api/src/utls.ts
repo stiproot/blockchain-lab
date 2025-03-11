@@ -52,7 +52,7 @@ export function translateWeb3ToUmiKeypair(umi: Umi, kp: Web3Keypair): UmiKeypair
 }
 
 export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner {
-    return createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(new Uint8Array(JSON.parse(keys.privKey))));
+    return createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(new Uint8Array(JSON.parse(keys.pk))));
 }
 
 // export function translateInstrKeyToSigner(umi: Umi, keys: IKeys) {

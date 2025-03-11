@@ -9,7 +9,7 @@ import {
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair, translateInstrKeyToSigner } from './utls';
-import { IInstruction, IKeys, ISetupResp, IToken } from './types';
+import { IInstr, IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
 
 const range = (start: number, stop: number, step = 1) =>
   Array.from({ length: Math.ceil((stop - start) / step) }, (_, i) => start + i * step);
@@ -71,7 +71,7 @@ async function getWalletXKeypair(umi: Umi, indx: number) {
   return translateWeb3ToUmiKeypair(umi, kp);
 }
 
-export async function createAccounts(no: number, useExisting: boolean = true): Promise<Array<IKeys>> {
+export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
   const connection: Connection = createConn();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
 
@@ -81,55 +81,59 @@ export async function createAccounts(no: number, useExisting: boolean = true): P
   const payerSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
   umi.use(keypairIdentity(payerSigner));
 
-  const indxs = range(0, no);
+  const indxs = range(0, instr.noAccs);
 
   let newAccs = [];
-  if (useExisting) {
+  if (instr.useExisting) {
     newAccs = await Promise.all(indxs.map(i => getWalletXKeypair(umi, i)));
   }
   else {
     newAccs = await Promise.all(indxs.map(i => createAccount(umi, connection, walletWeb3Keypair, lamports)));
   }
 
-  return newAccs.map(na => ({ privKey: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
+  return newAccs.map(na => ({ pk: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
 }
 
-export async function setup(name: string, noOfTokens: number): Promise<ISetupResp> {
+export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const connection: Connection = createConn();
 
   // CREATE TOURNAMENT ACC...
   const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
-  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
-  console.log('tournament', 'pubkey', tournamentWeb3Keypair.publicKey);
 
-  // console.log("Attempting account creation...")
-  // const transaction = new Transaction().add(
-  //   SystemProgram.createAccount({
-  //     fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
-  //     newAccountPubkey: tournamentWeb3Keypair.publicKey,
-  //     lamports, // Minimum SOL needed
-  //     space: 0, // Space required
-  //     programId: SystemProgram.programId, // Assign to system program
-  //   })
-  // );
+  const tournamentWeb3Keypair: Web3Keypair = instr.useExisting ? await loadKeypairFromCfg('tournament-keypair.json') : Web3Keypair.generate();
 
-  // await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
-  console.log("Account created:", tournamentWeb3Keypair.publicKey.toBase58());
+  if (!instr.useExisting) {
+    console.log("Attempting account creation...")
+    const transaction = new Transaction().add(
+      SystemProgram.createAccount({
+        fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
+        newAccountPubkey: tournamentWeb3Keypair.publicKey,
+        lamports, // Minimum SOL needed
+        space: 0, // Space required
+        programId: SystemProgram.programId, // Assign to system program
+      })
+    );
 
-  const tokenIndxs = range(0, noOfTokens);
+    await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
+  }
+
+  console.log("Trusted wallet created:", tournamentWeb3Keypair.publicKey.toBase58());
+
+  const tokenIndxs = range(0, instr.noTokens);
 
   // INIT UMI...
   const umi = buildUmi();
   const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
-  const payerSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
+  const walletSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
+
   const tournamentUmiKeypair: UmiKeypair = translateWeb3ToUmiKeypair(umi, tournamentWeb3Keypair);
 
-  umi.use(keypairIdentity(payerSigner));
+  umi.use(keypairIdentity(walletSigner));
 
   // MINT NFTS...
-  const buildTokenName = (tNo: number): string => `${name}:token-${tNo}`;
-  const buildTokenUri = (tNo: number): string => `https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg?tournament=${name}&token-${tNo}`;
+  const buildTokenName = (tNo: number): string => `${instr.name}:token-${tNo}`;
+  const buildTokenUri = (tNo: number): string => `https://en.wikipedia.org/wiki/Scorpion_(Mortal_Kombat)#/media/File:ScorpionMortalKombatx.jpg?tournament=${instr.name}&token-${tNo}`;
 
   const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNft(umi, buildTokenName(ti), buildTokenUri(ti)));
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
@@ -138,7 +142,7 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
   const transferPromises = mintAuths.map(ma => transferNftToTrustedWallet(
     umi,
     ma.publicKey,
-    payerSigner,
+    walletSigner,
     walletUmiKeypair.publicKey,
     tournamentUmiKeypair.publicKey,
   ));
@@ -149,14 +153,14 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
     tokens: mintAuths.map((v, i) => ({
       indx: i,
       mint: {
-        privKey: JSON.stringify(Array.from(v.secretKey))
+        pk: JSON.stringify(Array.from(v.secretKey))
       } as IKeys,
     } as IToken)),
-    tournament: { privKey: JSON.stringify(Array.from(tournamentUmiKeypair.secretKey)) } as IKeys
+    tournament: { pk: JSON.stringify(Array.from(tournamentUmiKeypair.secretKey)) } as IKeys
   } as ISetupResp;
 }
 
-export async function transferSol(instr: IInstruction) {
+export async function transferSol(instr: ITransferSolInstr) {
   const umi = buildUmi();
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
@@ -184,14 +188,14 @@ export async function transferSol(instr: IInstruction) {
   return {};
 }
 
-export async function transferNft(instr: IInstruction) {
+export async function transferNft(instr: ITransferNftInstr) {
   const umi = buildUmi();
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament!);
   umi.use(keypairIdentity(tournamentSigner));
   const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
 
-  if (instr.source.privKey !== instr.tournament.privKey) {
+  if (instr.source.pk !== instr.tournament.pk) {
     // Transfer NFT from source user to trusted wallet...
     const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
     await transferV1(umi, {
