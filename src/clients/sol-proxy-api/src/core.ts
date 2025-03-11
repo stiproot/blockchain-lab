@@ -12,7 +12,7 @@ import {
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri } from './utls';
 import { IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
-import { DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
+import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
 async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
@@ -21,7 +21,7 @@ async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigne
     mint,
     name,
     uri,
-    sellerFeeBasisPoints: percentAmount(5.5),
+    sellerFeeBasisPoints: percentAmount(DEFAULT_SELLER_FEE_BASIS_POINTS_AMT),
     isMutable: true,
   }).sendAndConfirm(umi);
   return mint;
@@ -132,7 +132,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
     );
     await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
     if (instr.fundAcc) {
-      await airdropSol(tournamentWeb3Keypair.publicKey.toString(), DEFAULT_SOL_FUND_AMT);
+      await airdropSol(tournamentWeb3Keypair.publicKey.toString());
     }
   }
 
@@ -181,7 +181,6 @@ export async function transferSol(instr: ITransferSolInstr) {
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
 
   umi.use(keypairIdentity(tournamentSigner));
-
 
   // Transfer from user's wallet to trusted wallet...
   const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
