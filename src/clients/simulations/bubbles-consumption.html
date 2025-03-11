@@ -63,7 +63,9 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        name: 'bc-2', noTokens: NO_TOKENS,
+                        name: 'bc-2',
+                        noTokens: NO_TOKENS,
+                        fundAcc: true,
                     }
                 }
             };
@@ -82,6 +84,7 @@
                     instr: {
                         noAccs: NO_TOKENS,
                         useExisting: true,
+                        fundAccs: true,
                     }
                 }
             };

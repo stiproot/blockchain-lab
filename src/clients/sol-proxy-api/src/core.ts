@@ -1,11 +1,13 @@
-import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, publicKey, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
 import { createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
+  PublicKey as Web3PublicKey,
   Connection,
   sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
   Keypair as Web3Keypair,
+  LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateWeb3ToUmiKeypair, translateInstrKeyToSigner } from './utls';
@@ -71,6 +73,18 @@ async function getWalletXKeypair(umi: Umi, indx: number) {
   return translateWeb3ToUmiKeypair(umi, kp);
 }
 
+async function airdropSol(recipientPubKey: string, amountSol: number) {
+  const connection: Connection = createConn();
+  const signature = await connection.requestAirdrop(
+    new Web3PublicKey(recipientPubKey),
+    amountSol * LAMPORTS_PER_SOL
+  );
+
+  // Wait for confirmation
+  await connection.confirmTransaction(signature);
+  console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`);
+}
+
 export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
   const connection: Connection = createConn();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
@@ -89,6 +103,10 @@ export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
   }
   else {
     newAccs = await Promise.all(indxs.map(i => createAccount(umi, connection, walletWeb3Keypair, lamports)));
+  }
+
+  if (instr.fundAccs) {
+    await Promise.all(newAccs.map(a => airdropSol(a.publicKey.toString(), 3)));
   }
 
   return newAccs.map(na => ({ pk: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
@@ -114,8 +132,10 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
         programId: SystemProgram.programId, // Assign to system program
       })
     );
-
     await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
+    if (instr.fundAcc) {
+      await airdropSol(tournamentWeb3Keypair.publicKey.toString(), 3);
+    }
   }
 
   console.log("Trusted wallet created:", tournamentWeb3Keypair.publicKey.toBase58());

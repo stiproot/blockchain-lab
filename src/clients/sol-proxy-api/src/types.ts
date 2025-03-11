@@ -24,11 +24,13 @@ export interface ISetupInstr extends IInstr {
   name: string;
   noTokens: number;
   useExisting: boolean;
+  fundAcc: boolean;
 }
 
 export interface ISetupAccsInstr extends IInstr {
   noAccs: number;
   useExisting: boolean;
+  fundAccs: boolean;
 }
 
 export interface ISetupResp {
