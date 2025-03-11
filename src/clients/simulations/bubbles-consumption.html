@@ -36,6 +36,7 @@
         let bubbles = [];
         let accs = [];
         let globalInit = false;
+        let globalQInit = false;
         let promiseQueue = [];
 
         const newId = () => Math.floor(Math.random() * 1000);
@@ -97,7 +98,7 @@
             globalInit = true;
         }
 
-        function handleSolTransfer(larger, smaller) {
+        function buildSolTransfer(smaller, larger) {
             const payload = {
                 cmdData: {
                     instr: {
@@ -107,10 +108,11 @@
                     }
                 }
             };
-            console.log('handleSolTransfer()', 'payload', payload);
+            console.log('buildSolTransfer()', 'payload', payload);
 
             const promiseFactory = () => callApi(TRANSFER_SOL_URL, payload)
                 .then(data => {
+                    console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
                     promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
                     // kickoff the next one...
@@ -120,15 +122,10 @@
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            const qItem = new FnHandle(newId(), promiseFactory);
-            promiseQueue.push(qItem);
-
-            if (promiseQueue.length === 1) {
-                promiseQueue[0].fn();
-            }
+            return new FnHandle(newId(), promiseFactory);
         }
 
-        function handleNftTransfer(larger, smaller) {
+        function buildNftTransfer(smaller, larger) {
             const payload = {
                 cmdData: {
                     instr: {
@@ -139,10 +136,11 @@
                     }
                 }
             };
-            console.log('handleNftTransfer()', 'payload', payload);
+            console.log('buildNftTransfer()', 'payload', payload);
 
             const promiseFactory = () => callApi(TRANSFER_NFT_URL, payload)
                 .then(data => {
+                    console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
                     promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
                     // kickoff the next one...
@@ -152,11 +150,19 @@
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            const qItem = new FnHandle(newId(), promiseFactory);
-            promiseQueue.push(qItem);
+            return new FnHandle(newId(), promiseFactory);
+        }
 
-            if (promiseQueue.length === 1) {
+        function handleTransfer(smaller, larger) {
+            const solT = buildSolTransfer(smaller, larger);
+            const nftT = buildNftTransfer(smaller, larger);
+
+            promiseQueue.push(solT);
+            promiseQueue.push(nftT);
+
+            if (!globalQInit) {
                 promiseQueue[0].fn();
+                globalQInit = true;
             }
         }
 
@@ -172,11 +178,7 @@
             larger.radius += RADIUS_INCREASE_UNIT;
             bubbles = bubbles.filter(b => b !== smaller);
 
-            // Transfer SOL to bigger...
-            handleSolTransfer(larger, smaller);
-
-            // Transfer NFT to smaller...
-            handleNftTransfer(larger, smaller);
+            handleTransfer(smaller, larger);
         }
 
         class FnHandle {
