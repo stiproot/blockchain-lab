@@ -26,16 +26,19 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const EVT_PROBABILITY = 0.05;
-        const RADIUS_INCREASE_UNIT = 5;
+        const RADIUS_INCREASE_UNIT = 7;
         const API_HOST_URL = 'http://localhost:3001';
         const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
         const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
         const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
         const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
-        const NO_TOKENS = 3;
+        const NO_TOKENS = 5;
         let bubbles = [];
         let accs = [];
-        const globalInit = false;
+        let globalInit = false;
+        let promiseQueue = [];
+
+        const newId = () => Math.floor(Math.random() * 1000);
 
         function getRandomColor() {
             const r = Math.floor(Math.random() * 256);
@@ -43,12 +46,6 @@
             const b = Math.floor(Math.random() * 256);
             return `rgba(${r}, ${g}, ${b}, 0.8)`;
         }
-
-        //   tournament: IKeys;
-        //   source: IKeys;
-        //   mint?: IKeys;
-        //   dest?: IKeys;
-        //   amount?: number;
 
         function initBubblesData(setupData) {
             for (let i = 0; i < setupData.tokens.length; i++) {
@@ -95,9 +92,9 @@
 
         async function init() {
             await Promise.all([initBubbles(), initAccs()])
+            animate();
             await initLinks();
             globalInit = true;
-            animate();
         }
 
         function handleSolTransfer(larger, smaller) {
@@ -105,8 +102,8 @@
                 cmdData: {
                     instr: {
                         tournament: larger.metadata.tournament,
-                        source: smaller.metadata.token.owner,
-                        dest: larger.metadata.token.owner,
+                        source: larger.metadata.token.owner,
+                        dest: smaller.metadata.token.owner,
                     }
                 }
             };
@@ -118,14 +115,16 @@
                     promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
                     // kickoff the next one...
                     if (promiseQueue.length) {
-                        promiseQueue[0]();
+                        promiseQueue[0].fn();
                     }
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            if (!promiseQueue.length) {
-                promiseQueue.push(promiseFactory);
-                promiseQueue[0]();
+            const qItem = new FnHandle(newId(), promiseFactory);
+            promiseQueue.push(qItem);
+
+            if (promiseQueue.length === 1) {
+                promiseQueue[0].fn();
             }
         }
 
@@ -136,7 +135,7 @@
                         tournament: larger.metadata.tournament,
                         source: smaller.metadata.token.owner,
                         dest: larger.metadata.token.owner,
-                        mint: smaller.token.mint,
+                        mint: smaller.metadata.token.mint,
                     }
                 }
             };
@@ -148,14 +147,16 @@
                     promiseQueue = promiseQueue.filter(i => i.id !== payload.id);
                     // kickoff the next one...
                     if (promiseQueue.length) {
-                        promiseQueue[0]();
+                        promiseQueue[0].fn();
                     }
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            if (!promiseQueue.length) {
-                promiseQueue.push(promiseFactory);
-                promiseQueue[0]();
+            const qItem = new FnHandle(newId(), promiseFactory);
+            promiseQueue.push(qItem);
+
+            if (promiseQueue.length === 1) {
+                promiseQueue[0].fn();
             }
         }
 
@@ -176,6 +177,13 @@
 
             // Transfer NFT to smaller...
             handleNftTransfer(larger, smaller);
+        }
+
+        class FnHandle {
+            constructor(id, fn) {
+                this.id = id;
+                this.fn = fn;
+            }
         }
 
         class Metadata {

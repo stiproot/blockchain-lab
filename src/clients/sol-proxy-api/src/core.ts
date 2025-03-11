@@ -101,19 +101,20 @@ export async function setup(name: string, noOfTokens: number): Promise<ISetupRes
   const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
   const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg('tournament-keypair.json');
+  console.log('tournament', 'pubkey', tournamentWeb3Keypair.publicKey);
 
-  console.log("Attempting account creation...")
-  const transaction = new Transaction().add(
-    SystemProgram.createAccount({
-      fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
-      newAccountPubkey: tournamentWeb3Keypair.publicKey,
-      lamports, // Minimum SOL needed
-      space: 0, // Space required
-      programId: SystemProgram.programId, // Assign to system program
-    })
-  );
+  // console.log("Attempting account creation...")
+  // const transaction = new Transaction().add(
+  //   SystemProgram.createAccount({
+  //     fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
+  //     newAccountPubkey: tournamentWeb3Keypair.publicKey,
+  //     lamports, // Minimum SOL needed
+  //     space: 0, // Space required
+  //     programId: SystemProgram.programId, // Assign to system program
+  //   })
+  // );
 
-  await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
+  // await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
   console.log("Account created:", tournamentWeb3Keypair.publicKey.toBase58());
 
   const tokenIndxs = range(0, noOfTokens);
@@ -162,12 +163,14 @@ export async function transferSol(instr: IInstruction) {
 
   umi.use(keypairIdentity(tournamentSigner));
 
+  const defaultSolAmount = 0.001;
+
   // Transfer from user's wallet to trusted wallet...
   const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
   await mplTransferSol(umi, {
     source: sourceUserWalletSigner,
     destination: tournamentSigner.publicKey,
-    amount: sol(instr.amount || 0.001),
+    amount: sol(instr.amount || defaultSolAmount),
   }).sendAndConfirm(umi);
 
   // Transfer from the trusted wallet to the user's wallet... 
@@ -175,7 +178,7 @@ export async function transferSol(instr: IInstruction) {
   await mplTransferSol(umi, {
     source: tournamentSigner,
     destination: destUserWallet.publicKey,
-    amount: sol(instr.amount!),
+    amount: sol(instr.amount! || defaultSolAmount),
   }).sendAndConfirm(umi);
 
   return {};
@@ -209,4 +212,6 @@ export async function transferNft(instr: IInstruction) {
     destinationOwner: destUserWalletSigner.publicKey,
     tokenStandard: TokenStandard.NonFungible,
   }).sendAndConfirm(umi);
+
+  return {};
 }
