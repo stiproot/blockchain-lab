@@ -10,38 +10,61 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri } from './utls';
+import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri, logTransactionLink } from './utls';
 import { IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
 async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
   const mint: KeypairSigner = signer || generateSigner(umi);
-  await createNft(umi, {
+
+  const builder = createNft(umi, {
     mint,
     name,
     uri,
     sellerFeeBasisPoints: percentAmount(DEFAULT_SELLER_FEE_BASIS_POINTS_AMT),
     isMutable: true,
-  }).sendAndConfirm(umi);
+  });
+
+  const { signature } = await builder.sendAndConfirm(umi);
+  logTransactionLink('mintNft()', signature);
+
   return mint;
 }
 
-async function transferNftToTrustedWallet(
+export async function transferSolCore(
+  umi: Umi,
+  sourceSigner: KeypairSigner,
+  destPubKey: PublicKey,
+  amt: number = DEFAULT_SOL_TRANSFER_AMT
+) {
+  const builder = mplTransferSol(umi, {
+    source: sourceSigner,
+    destination: destPubKey,
+    amount: sol(amt),
+  });
+
+  const { signature } = await builder.sendAndConfirm(umi);
+  logTransactionLink('transferSolCore()', signature);
+}
+
+export async function transferNftCore(
   umi: Umi,
   mintPubKey: PublicKey,
-  authorityKeySigner: KeypairSigner,
+  authoritySigner: KeypairSigner,
   ownerPubKey: PublicKey,
-  newOwnerPubKey: PublicKey,
+  destOwnerPubKey: PublicKey
 ) {
-  console.log("Attempting asset transfer...")
-  await transferV1(umi, {
+  const builder = transferV1(umi, {
     mint: mintPubKey,
-    authority: authorityKeySigner,
+    authority: authoritySigner,
     tokenOwner: ownerPubKey,
-    destinationOwner: newOwnerPubKey,
+    destinationOwner: destOwnerPubKey,
     tokenStandard: TokenStandard.NonFungible,
-  }).sendAndConfirm(umi);
+  });
+
+  const { signature } = await builder.sendAndConfirm(umi);
+  logTransactionLink('transferNftCore()', signature);
 }
 
 async function createAccount(
@@ -52,17 +75,19 @@ async function createAccount(
   newAccountKeypair: Web3Keypair | null = null
 ): Promise<UmiKeypair> {
   const web3Keypair: Web3Keypair = newAccountKeypair || Web3Keypair.generate();
-  const transaction = new Transaction().add(
-    SystemProgram.createAccount({
-      fromPubkey: fundingWallet.publicKey, // Funding wallet
-      newAccountPubkey: web3Keypair.publicKey,
-      lamports, // Minimum SOL needed
-      space: 0, // Space required
-      programId: SystemProgram.programId, // Assign to system program
-    })
-  );
-  await sendAndConfirmTransaction(connection, transaction, [fundingWallet, web3Keypair]);
-  console.log("Account created:", web3Keypair.publicKey.toBase58());
+
+  const instruction = SystemProgram.createAccount({
+    fromPubkey: fundingWallet.publicKey, // Funding wallet
+    newAccountPubkey: web3Keypair.publicKey,
+    lamports, // Minimum SOL needed
+    space: 0, // Space required
+    programId: SystemProgram.programId, // Assign to system program
+  });
+
+  const transaction = new Transaction().add(instruction);
+  const signature = await sendAndConfirmTransaction(connection, transaction, [fundingWallet, web3Keypair]);
+
+  console.log('createAccount()', 'pubKey', web3Keypair.publicKey.toBase58(), 'signature', signature);
   return createUmiKeypairFromSecretKey(umi, web3Keypair.secretKey);
 }
 
@@ -80,7 +105,7 @@ async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_S
 
   // Wait for confirmation
   await connection.confirmTransaction(signature);
-  console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`);
+  console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`, 'signature', signature);
 }
 
 export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
@@ -120,7 +145,6 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const tournamentWeb3Keypair: Web3Keypair = instr.useExisting ? await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG) : Web3Keypair.generate();
 
   if (!instr.useExisting) {
-    console.log("Attempting account creation...")
     const transaction = new Transaction().add(
       SystemProgram.createAccount({
         fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
@@ -154,7 +178,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
   // TRANSER...
-  const transferPromises = mintAuths.map(ma => transferNftToTrustedWallet(
+  const transferPromises = mintAuths.map(ma => transferNftCore(
     umi,
     ma.publicKey,
     walletSigner,
@@ -179,24 +203,15 @@ export async function transferSol(instr: ITransferSolInstr) {
   const umi = buildUmi();
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
-
   umi.use(keypairIdentity(tournamentSigner));
 
   // Transfer from user's wallet to trusted wallet...
   const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
-  await mplTransferSol(umi, {
-    source: sourceUserWalletSigner,
-    destination: tournamentSigner.publicKey,
-    amount: sol(instr.amount || DEFAULT_SOL_TRANSFER_AMT),
-  }).sendAndConfirm(umi);
+  await transferSolCore(umi, sourceUserWalletSigner, tournamentSigner.publicKey);
 
   // Transfer from the trusted wallet to the user's wallet... 
   const destUserWallet = translateInstrKeyToSigner(umi, instr.dest!);
-  await mplTransferSol(umi, {
-    source: tournamentSigner,
-    destination: destUserWallet.publicKey,
-    amount: sol(instr.amount! || DEFAULT_SOL_TRANSFER_AMT),
-  }).sendAndConfirm(umi);
+  await transferSolCore(umi, tournamentSigner, destUserWallet.publicKey);
 
   return {};
 }
@@ -211,24 +226,12 @@ export async function transferNft(instr: ITransferNftInstr) {
   if (instr.source.pk !== instr.tournament.pk) {
     // Transfer NFT from source user to trusted wallet...
     const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
-    await transferV1(umi, {
-      mint: mintSigner.publicKey,
-      authority: sourceUserWalletSigner,
-      tokenOwner: sourceUserWalletSigner.publicKey,
-      destinationOwner: tournamentSigner.publicKey,
-      tokenStandard: TokenStandard.NonFungible,
-    }).sendAndConfirm(umi);
+    await transferNftCore(umi, mintSigner.publicKey, sourceUserWalletSigner, sourceUserWalletSigner.publicKey, tournamentSigner.publicKey);
   }
 
   // Transfer NFT from trusted wallet to dest user wallet...
   const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest!);
-  await transferV1(umi, {
-    mint: mintSigner.publicKey,
-    authority: tournamentSigner,
-    tokenOwner: tournamentSigner.publicKey,
-    destinationOwner: destUserWalletSigner.publicKey,
-    tokenStandard: TokenStandard.NonFungible,
-  }).sendAndConfirm(umi);
+  await transferNftCore(umi, mintSigner.publicKey, tournamentSigner, tournamentSigner.publicKey, destUserWalletSigner.publicKey);
 
   return {};
 }

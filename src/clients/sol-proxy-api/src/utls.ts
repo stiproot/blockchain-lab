@@ -11,6 +11,7 @@ import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
+import bs58 from 'bs58';
 import { IKeys } from './types';
 import { DEFAULT_NFT_URL } from './consts';
 
@@ -60,7 +61,7 @@ export async function buildWalletKeypair(umi: Umi): Promise<UmiKeypair> {
 }
 
 export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner {
-    return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, new Uint8Array(JSON.parse(keys.pk))));
+    return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, Uint8Array.from(JSON.parse(keys.pk))));
 }
 
 export function getClusterUrl(): string {
@@ -86,3 +87,5 @@ export const range = (start: number, stop: number, step = 1) =>
 
 export const buildTokenName = (name: string, tNo: number): string => `${name}:token-${tNo}`;
 export const buildTokenUri = (name: string, tNo: number): string => `${DEFAULT_NFT_URL}?tournament=${name}&token-${tNo}`;
+
+export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=custom`);

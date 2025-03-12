@@ -25,14 +25,14 @@
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const EVT_PROBABILITY = 0.05;
-        const RADIUS_INCREASE_UNIT = 7;
+        const EVT_PROBABILITY = 0.10;
+        const RADIUS_INCREASE_UNIT = 8;
         const API_HOST_URL = 'http://localhost:3001';
         const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
         const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
         const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
         const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
-        const NO_TOKENS = 3;
+        const NO_TOKENS = 10;
         let bubbles = [];
         let accs = [];
         let globalInit = false;
