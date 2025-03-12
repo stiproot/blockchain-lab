@@ -52,6 +52,13 @@ export interface ITransferNftInstr extends IInstr {
   mint: IKeys;
 }
 
+export interface IBurnNftInstr extends IInstr {
+  tournament: IKeys;
+  source: IKeys;
+  mint: IKeys;
+}
+
+
 export interface IToken {
   indx: number;
   owner?: IKeys;

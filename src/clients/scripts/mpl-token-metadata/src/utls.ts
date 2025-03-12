@@ -11,6 +11,7 @@ import fs from 'mz/fs.js';
 import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
+import bs58 from 'bs58';
 
 require("dotenv").config();
 
@@ -55,6 +56,8 @@ export function translateWeb3ToUmiKeypair(umi: Umi, kp: Web3Keypair): UmiKeypair
 }
 
 export function getClusterUrl(): string {
+    console.log('SOLNET', process.env.SOLNET);
+
     if (process.env.SOLNET === 'localnet') {
         return 'http://localhost:8899';
     }
@@ -71,3 +74,5 @@ export function getClusterUrl(): string {
 }
 export const buildUmi = () => createUmi(getClusterUrl()).use(mplTokenMetadata());
 export const createConn = () => new Connection(getClusterUrl(), 'confirmed');
+
+export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=custom`);

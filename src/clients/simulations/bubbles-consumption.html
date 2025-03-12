@@ -20,108 +20,27 @@
 
 <body>
     <canvas id="bubbleCanvas"></canvas>
+    <script src="mocked.js"></script>
+    <script src="utls.js"></script>
+    <script src="data.js"></script>
     <script>
         const canvas = document.getElementById('bubbleCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const EVT_PROBABILITY = 0.10;
+        const EVT_PROBABILITY = 0.1;
+        const POP_PROBABILITY = 0.15;
         const RADIUS_INCREASE_UNIT = 8;
-        const API_HOST_URL = 'http://localhost:3001';
-        const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
-        const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
-        const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
-        const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
         const NO_TOKENS = 10;
+        const POP_ITERATION = 50;
         let bubbles = [];
         let accs = [];
+        let promiseQ = [];
+        const client = new SolProxyClient();
         let globalInit = false;
         let globalQInit = false;
-        let promiseQ = [];
-
-        const newId = () => Math.floor(Math.random() * 1000);
-
-        function getRandomColor() {
-            const r = Math.floor(Math.random() * 256);
-            const g = Math.floor(Math.random() * 256);
-            const b = Math.floor(Math.random() * 256);
-            return `rgba(${r}, ${g}, ${b}, 0.8)`;
-        }
-
-        function initBubblesData(setupData) {
-            for (let i = 0; i < setupData.tokens.length; i++) {
-                let radius = Math.random() * 30 + 10;
-                let x = Math.random() * (canvas.width - radius * 2) + radius;
-                let y = Math.random() * (canvas.height - radius * 2) + radius;
-
-                const metadata = new Metadata(setupData.tokens[i], setupData.tournament);
-                bubbles.push(new Bubble(x, y, radius, metadata));
-            }
-        }
-
-        async function initBubbles() {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        name: 'bc-2',
-                        noTokens: NO_TOKENS,
-                        fundAcc: true,
-                    }
-                }
-            };
-            const setupData = await callApi(SETUP_URL, payload);
-            initBubblesData(setupData);
-        }
-
-        function initAccsData(setupData) {
-            console.log('initAccsData', 'setupData', setupData);
-            accs = setupData;
-        }
-
-        async function initAccs() {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        noAccs: NO_TOKENS,
-                        useExisting: true,
-                        fundAccs: true,
-                    }
-                }
-            };
-            const setupData = await callApi(CREATE_ACCS_URL, payload);
-            console.log('initAccs', 'setupData', setupData);
-            initAccsData(setupData);
-        }
-
-        async function initLink(acc, metadata) {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: metadata.tournament,
-                        mint: metadata.token.mint,
-                        dest: acc, source: metadata.tournament,
-                        useExisting: true
-                    }
-                }
-            };
-            console.log('initLink()', 'payload', payload);
-            await callApi(TRANSFER_NFT_URL, payload);
-
-            const bubble = bubbles.filter(b => b.metadata.token.indx === metadata.token.indx)[0];
-            bubble.color = getRandomColor();
-            bubble.metadata.token.owner = acc;
-        }
-
-        async function initLinks() {
-            await Promise.all(bubbles.map((v, i) => initLink(accs[i], v.metadata)));
-        }
-
-        async function init() {
-            await Promise.all([initBubbles(), initAccs()])
-            animate();
-            await initLinks();
-            globalInit = true;
-        }
+        let globalPop = false;
+        const globalMocked = false;
 
         function buildSolTransfer(smaller, larger) {
             const payload = {
@@ -135,7 +54,7 @@
             };
             console.log('buildSolTransfer()', 'payload', payload);
 
-            const promiseFactory = () => callApi(TRANSFER_SOL_URL, payload)
+            const promiseFactory = () => client.transferSol(payload, globalMocked)
                 .then(data => {
                     console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
@@ -163,7 +82,7 @@
             };
             console.log('buildNftTransfer()', 'payload', payload);
 
-            const promiseFactory = () => callApi(TRANSFER_NFT_URL, payload)
+            const promiseFactory = () => client.transferNft(payload, globalMocked)
                 .then(data => {
                     console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
                     // remove this promise from queue...
@@ -178,7 +97,38 @@
             return new FnHandle(newId(), promiseFactory);
         }
 
+        function buildNftBurn(bubble) {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        tournament: bubble.metadata.tournament,
+                        source: bubble.metadata.token.owner,
+                        mint: bubble.metadata.token.mint,
+                    }
+                }
+            };
+            console.log('buildNftBurn()', 'payload', payload);
+
+            const promiseFactory = () => client.burnNft(payload, globalMocked)
+                .then(data => {
+                    console.log('buildNftBurn()', 'promiseFactory', 'data', data);
+                    // remove this promise from queue...
+                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
+                    // kickoff the next one...
+                    if (promiseQ.length) {
+                        promiseQ[0].fn();
+                    }
+                })
+                .catch(error => console.error('API call failed:', error));
+
+            return new FnHandle(newId(), promiseFactory);
+        }
+
         function handleTransfer(smaller, larger) {
+            if (globalMocked) {
+                return;
+            }
+
             const solT = buildSolTransfer(smaller, larger);
             const nftT = buildNftTransfer(smaller, larger);
 
@@ -191,8 +141,27 @@
             }
         }
 
+        function handleBurn(bubble) {
+            if (globalMocked) {
+                return;
+            }
+
+            const t = buildNftBurn(bubble);
+
+            promiseQ.push(t);
+
+            if (!globalQInit) {
+                promiseQ[0].fn();
+                globalQInit = true;
+            }
+        }
+
         function handleCollision(b1, b2) {
             if (Math.random() >= EVT_PROBABILITY || !globalInit) {
+                return;
+            }
+
+            if (globalPop) {
                 return;
             }
 
@@ -228,12 +197,19 @@
                 this.dx = (Math.random() - 0.5) * 2;
                 this.dy = (Math.random() - 0.5) * 2;
                 this.wobbleFactor = Math.random() * 0.2 + 0.1;
-                // this.color = getRandomColor();
                 this.color = 'lightgray';
                 this.metadata = metadata;
+                this.popIteration = 0;
+                this.popping = false;
             }
 
             move() {
+                if (this.popping) {
+                    this.radius += 3;
+                    this.popIteration++;
+                    return;
+                }
+
                 this.x += this.dx;
                 this.y += this.dy;
                 this.dx += (Math.random() - 0.5) * this.wobbleFactor;
@@ -284,8 +260,110 @@
                 bubble.move();
                 bubble.draw();
             });
+            popped = bubbles.filter(bubble => bubble.popIteration >= POP_ITERATION);
+            if (popped.length) {
+                bubbles = bubbles.filter(bubble => bubble.popIteration < POP_ITERATION);
+                for (const b of bubbles) {
+                    handleBurn(b);
+                }
+                globalPop = false;
+            }
             detectCollisions();
             requestAnimationFrame(animate);
+        }
+
+        function initBubblesData(setupData) {
+            for (let i = 0; i < setupData.tokens.length; i++) {
+                let radius = Math.random() * 30 + 10;
+                let x = Math.random() * (canvas.width - radius * 2) + radius;
+                let y = Math.random() * (canvas.height - radius * 2) + radius;
+
+                const metadata = new Metadata(setupData.tokens[i], setupData.tournament);
+                bubbles.push(new Bubble(x, y, radius, metadata));
+            }
+        }
+
+        async function initBubbles() {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        name: 'bc-2',
+                        noTokens: NO_TOKENS,
+                        fundAcc: true,
+                    }
+                }
+            };
+            const setupData = await client.setup(payload, globalMocked);
+            initBubblesData(setupData);
+        }
+
+        function initAccsData(setupData) {
+            console.log('initAccsData', 'setupData', setupData);
+            accs = setupData;
+        }
+
+        async function initAccs() {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        noAccs: NO_TOKENS,
+                        useExisting: true,
+                        fundAccs: true,
+                    }
+                }
+            };
+            const setupData = await client.createAccs(payload, globalMocked);
+            console.log('initAccs', 'setupData', setupData);
+            initAccsData(setupData);
+        }
+
+        async function initLink(acc, metadata) {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        tournament: metadata.tournament,
+                        mint: metadata.token.mint,
+                        dest: acc, source: metadata.tournament,
+                        useExisting: true
+                    }
+                }
+            };
+            console.log('initLink()', 'payload', payload);
+            await client.transferNft(payload, globalMocked);
+
+            const bubble = bubbles.filter(b => b.metadata.token.indx === metadata.token.indx)[0];
+            bubble.color = getRandomColor();
+            bubble.metadata.token.owner = acc;
+        }
+
+        async function initLinks() {
+            await Promise.all(bubbles.map((v, i) => initLink(accs[i], v.metadata)));
+        }
+
+        async function init() {
+            await Promise.all([initBubbles(), initAccs()])
+            animate();
+            await initLinks();
+            globalInit = true;
+
+            setInterval(() => {
+                if (Math.random() > POP_PROBABILITY) {
+                    return;
+                }
+
+                if (globalPop) {
+                    return;
+                }
+
+                if (!bubbles.length) {
+                    return;
+                }
+
+                globalPop = true;
+                const bubble = bubbles[Math.floor(Math.random() * bubbles.length)];
+                console.log('bubble to pop', bubble);
+                bubble.popping = true
+            }, 1000);
         }
 
         init()
@@ -293,32 +371,6 @@
                 () => console.log('init()', 'DONE!'),
                 err => console.error('init()', 'ERROR', err)
             );
-        // animate();
-
-        async function callApi(url, body = null, method = 'POST', headers = {}) {
-            try {
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...headers
-                    },
-                    body: body ? JSON.stringify(body) : null
-                };
-
-                const response = await fetch(url, options);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('Error:', error);
-                throw error;
-            }
-        }
 
     </script>
 </body>

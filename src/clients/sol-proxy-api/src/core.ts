@@ -1,5 +1,5 @@
 import { createSignerFromKeypair, generateSigner, keypairIdentity, KeypairSigner, percentAmount, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
-import { createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
+import { burnV1, createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   PublicKey as Web3PublicKey,
   Connection,
@@ -11,7 +11,7 @@ import {
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri, logTransactionLink } from './utls';
-import { IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
+import { IBurnNftInstr, IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
@@ -65,6 +65,23 @@ export async function transferNftCore(
 
   const { signature } = await builder.sendAndConfirm(umi);
   logTransactionLink('transferNftCore()', signature);
+}
+
+export async function burnNftCore(
+  umi: Umi,
+  mintPubKey: PublicKey,
+  authoritySigner: KeypairSigner,
+  ownerPubKey: PublicKey
+) {
+  const builder = burnV1(umi, {
+    mint: mintPubKey,
+    authority: authoritySigner,
+    tokenOwner: ownerPubKey,
+    tokenStandard: TokenStandard.NonFungible,
+  });
+
+  const { signature } = await builder.sendAndConfirm(umi);
+  logTransactionLink('burnNftCore()', signature);
 }
 
 async function createAccount(
@@ -232,6 +249,32 @@ export async function transferNft(instr: ITransferNftInstr) {
   // Transfer NFT from trusted wallet to dest user wallet...
   const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest!);
   await transferNftCore(umi, mintSigner.publicKey, tournamentSigner, tournamentSigner.publicKey, destUserWalletSigner.publicKey);
+
+  return {};
+}
+
+export async function burnNft(instr: IBurnNftInstr) {
+  const umi = buildUmi();
+
+  const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
+  umi.use(keypairIdentity(tournamentSigner));
+  const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
+
+  // Transfer NFT from source user to trusted wallet...
+  const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
+  await transferNftCore(
+    umi,
+    mintSigner.publicKey,
+    sourceUserWalletSigner,
+    sourceUserWalletSigner.publicKey,
+    tournamentSigner.publicKey
+  );
+
+  await burnNftCore(umi,
+    mintSigner.publicKey,
+    tournamentSigner,
+    tournamentSigner.publicKey,
+  );
 
   return {};
 }

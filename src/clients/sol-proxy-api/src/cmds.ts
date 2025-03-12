@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { IReq, ICmd, ISetupInstr, ISetupAccsInstr, ITransferSolInstr, ITransferNftInstr } from './types';
-import { setup, setupAccs, transferNft, transferSol } from './core';
+import { IReq, ICmd, ISetupInstr, ISetupAccsInstr, ITransferSolInstr, ITransferNftInstr, IBurnNftInstr } from './types';
+import { setup, setupAccs, transferNft, transferSol, burnNft } from './core';
 
 export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procSetupCmd START.`);
@@ -39,5 +39,15 @@ export const procTransferNft = async (req: IReq<ICmd>, res: Response) => {
   const resp = await transferNft(instr);
 
   console.info(`procTransferNft END.`);
+  res.status(200).json(resp);
+};
+
+export const procBurnNft = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procBurnNft START.`);
+
+  const { instr }: { instr: IBurnNftInstr } = req.body.cmdData;
+  const resp = await burnNft(instr);
+
+  console.info(`procBurnNft END.`);
   res.status(200).json(resp);
 };

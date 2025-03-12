@@ -8,7 +8,7 @@ export async function createAccount() {
   const walletKeypair = await loadDefaultWalletKeypair();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
 
-  const newAccount = await loadKeypairFromCfg('tournament-keypair.json');
+  const newAccount = await loadKeypairFromCfg('lt1-keypair.json');
   console.log("New Account Public Key:", newAccount.publicKey.toBase58());
 
   const transaction = new Transaction().add(

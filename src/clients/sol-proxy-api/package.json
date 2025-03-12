@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "calc": "ts-node src/calc.ts",
     "sol-tournament-keygen": "solana-keygen new -o .cfg/tournament-keypair.json --force",
     "build": "tsc",
     "start": "node dist/index.js",
