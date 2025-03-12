@@ -33,6 +33,8 @@
         const RADIUS_INCREASE_UNIT = 8;
         const NO_TOKENS = 10;
         const POP_ITERATION = 50;
+        const POP_INTERVAL_MS = 1000;
+        const Q_INTERVAL_MS = 1500;
         let bubbles = [];
         let accs = [];
         let promiseQ = [];
@@ -41,6 +43,11 @@
         let globalQInit = false;
         let globalPop = false;
         const globalMocked = false;
+
+        function handlePromiseResolved(promiseId) {
+            promiseQ.shift();
+            globalQInit = false;
+        }
 
         function buildSolTransfer(smaller, larger) {
             const payload = {
@@ -54,19 +61,16 @@
             };
             console.log('buildSolTransfer()', 'payload', payload);
 
+            const promiseId = newId();
+
             const promiseFactory = () => client.transferSol(payload, globalMocked)
                 .then(data => {
                     console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
-                    // remove this promise from queue...
-                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
-                    // kickoff the next one...
-                    if (promiseQ.length) {
-                        promiseQ[0].fn();
-                    }
+                    handlePromiseResolved(promiseId);
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            return new FnHandle(newId(), promiseFactory);
+            return new FnHandle(promiseId, promiseFactory);
         }
 
         function buildNftTransfer(smaller, larger) {
@@ -82,19 +86,16 @@
             };
             console.log('buildNftTransfer()', 'payload', payload);
 
+            const promiseId = newId();
+
             const promiseFactory = () => client.transferNft(payload, globalMocked)
                 .then(data => {
                     console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
-                    // remove this promise from queue...
-                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
-                    // kickoff the next one...
-                    if (promiseQ.length) {
-                        promiseQ[0].fn();
-                    }
+                    handlePromiseResolved(promiseId);
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            return new FnHandle(newId(), promiseFactory);
+            return new FnHandle(promiseId, promiseFactory);
         }
 
         function buildNftBurn(bubble) {
@@ -109,51 +110,34 @@
             };
             console.log('buildNftBurn()', 'payload', payload);
 
+            const promiseId = newId();
+
             const promiseFactory = () => client.burnNft(payload, globalMocked)
                 .then(data => {
                     console.log('buildNftBurn()', 'promiseFactory', 'data', data);
-                    // remove this promise from queue...
-                    promiseQ = promiseQ.filter(i => i.id !== payload.id);
-                    // kickoff the next one...
-                    if (promiseQ.length) {
-                        promiseQ[0].fn();
-                    }
+                    handlePromiseResolved(promiseId);
                 })
                 .catch(error => console.error('API call failed:', error));
 
-            return new FnHandle(newId(), promiseFactory);
+            return new FnHandle(promiseId, promiseFactory);
         }
 
         function handleTransfer(smaller, larger) {
             if (globalMocked) {
                 return;
             }
-
             const solT = buildSolTransfer(smaller, larger);
             const nftT = buildNftTransfer(smaller, larger);
-
             promiseQ.push(solT);
             promiseQ.push(nftT);
-
-            if (!globalQInit) {
-                promiseQ[0].fn();
-                globalQInit = true;
-            }
         }
 
         function handleBurn(bubble) {
             if (globalMocked) {
                 return;
             }
-
             const t = buildNftBurn(bubble);
-
             promiseQ.push(t);
-
-            if (!globalQInit) {
-                promiseQ[0].fn();
-                globalQInit = true;
-            }
         }
 
         function handleCollision(b1, b2) {
@@ -175,10 +159,36 @@
             handleTransfer(smaller, larger);
         }
 
+        // function trackPromise(promise) {
+        //     let isResolved = false;
+
+        //     const wrappedPromise = promise.then(
+        //         (value) => {
+        //             console.log('trackPromise()', 'wrappedPromise', 'isResolved', true);
+        //             isResolved = true;
+        //             return value;
+        //         },
+        //         (error) => {
+        //             console.log('trackPromise()', 'wrappedPromise', 'ERROR', 'isResolved', true);
+        //             isResolved = true;
+        //             throw error;
+        //         }
+        //     );
+
+        //     wrappedPromise.isResolved = () => isResolved;
+
+        //     return wrappedPromise;
+        // }
+
         class FnHandle {
             constructor(id, fn) {
                 this.id = id;
                 this.fn = fn;
+            }
+
+            invoke() {
+                this.promise = this.fn();
+                console.log('fnHandle', 'invoke()', 'promise', this.promise);
             }
         }
 
@@ -340,12 +350,7 @@
             await Promise.all(bubbles.map((v, i) => initLink(accs[i], v.metadata)));
         }
 
-        async function init() {
-            await Promise.all([initBubbles(), initAccs()])
-            animate();
-            await initLinks();
-            globalInit = true;
-
+        function initPopInterval() {
             setInterval(() => {
                 if (Math.random() > POP_PROBABILITY) {
                     return;
@@ -363,7 +368,30 @@
                 const bubble = bubbles[Math.floor(Math.random() * bubbles.length)];
                 console.log('bubble to pop', bubble);
                 bubble.popping = true
-            }, 1000);
+            }, POP_INTERVAL_MS);
+        }
+
+        function initQInterval() {
+            setInterval(() => {
+                if (!promiseQ.length) {
+                    return;
+                }
+
+                if (!globalQInit) {
+                    promiseQ[0].invoke();
+                    globalQInit = true;
+                    return;
+                }
+            }, Q_INTERVAL_MS);
+        }
+
+        async function init() {
+            await Promise.all([initBubbles(), initAccs()])
+            animate();
+            await initLinks();
+            globalInit = true;
+            initPopInterval();
+            initQInterval();
         }
 
         init()
