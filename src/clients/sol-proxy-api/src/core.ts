@@ -15,7 +15,7 @@ import { IBurnNftInstr, IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken,
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
-async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
+async function mintNftCore(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
   const mint: KeypairSigner = signer || generateSigner(umi);
 
   const builder = createNft(umi, {
@@ -27,7 +27,7 @@ async function mintNft(umi: Umi, name: string, uri: string, signer: KeypairSigne
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLink('mintNft()', signature);
+  logTransactionLink('mintNftCore()', signature);
 
   return mint;
 }
@@ -191,7 +191,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   umi.use(keypairIdentity(walletSigner));
 
   // MINT NFTS...
-  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNft(umi, buildTokenName(instr.name, ti), buildTokenUri(instr.name, ti)));
+  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNftCore(umi, buildTokenName(instr.name, ti), buildTokenUri(instr.name, ti)));
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
   // TRANSER...
@@ -227,7 +227,7 @@ export async function transferSol(instr: ITransferSolInstr) {
   await transferSolCore(umi, sourceUserWalletSigner, tournamentSigner.publicKey);
 
   // Transfer from the trusted wallet to the user's wallet... 
-  const destUserWallet = translateInstrKeyToSigner(umi, instr.dest!);
+  const destUserWallet = translateInstrKeyToSigner(umi, instr.dest);
   await transferSolCore(umi, tournamentSigner, destUserWallet.publicKey);
 
   return {};

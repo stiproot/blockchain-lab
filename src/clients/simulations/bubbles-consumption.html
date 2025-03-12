@@ -29,7 +29,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const EVT_PROBABILITY = 0.1;
-        const POP_PROBABILITY = 0.15;
+        const POP_PROBABILITY = 0.2;
         const RADIUS_INCREASE_UNIT = 8;
         const NO_TOKENS = 10;
         const POP_ITERATION = 50;
@@ -126,9 +126,11 @@
             if (globalMocked) {
                 return;
             }
+
             const solT = buildSolTransfer(smaller, larger);
-            const nftT = buildNftTransfer(smaller, larger);
             promiseQ.push(solT);
+
+            const nftT = buildNftTransfer(smaller, larger);
             promiseQ.push(nftT);
         }
 
@@ -152,33 +154,11 @@
             let larger = b1.radius > b2.radius ? b1 : b2;
             let smaller = b1.radius > b2.radius ? b2 : b1;
 
-            // Larger radius increases by that of smaller...
             larger.radius += RADIUS_INCREASE_UNIT;
             bubbles = bubbles.filter(b => b !== smaller);
 
             handleTransfer(smaller, larger);
         }
-
-        // function trackPromise(promise) {
-        //     let isResolved = false;
-
-        //     const wrappedPromise = promise.then(
-        //         (value) => {
-        //             console.log('trackPromise()', 'wrappedPromise', 'isResolved', true);
-        //             isResolved = true;
-        //             return value;
-        //         },
-        //         (error) => {
-        //             console.log('trackPromise()', 'wrappedPromise', 'ERROR', 'isResolved', true);
-        //             isResolved = true;
-        //             throw error;
-        //         }
-        //     );
-
-        //     wrappedPromise.isResolved = () => isResolved;
-
-        //     return wrappedPromise;
-        // }
 
         class FnHandle {
             constructor(id, fn) {
