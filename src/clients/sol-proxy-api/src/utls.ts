@@ -93,7 +93,7 @@ export const range = (start: number, stop: number, step = 1) =>
 export const buildTokenName = (name: string, tNo: number): string => `${name}:token-${tNo}`;
 export const buildTokenUri = (name: string, tNo: number): string => `${DEFAULT_NFT_URL}?tournament=${name}&token-${tNo}`;
 
-export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=custom`);
+export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=${process.env.SOLNET}`);
 
 export async function buildTestWalletUmiKeypair(umi: Umi, indx: number): Promise<UmiKeypair> {
     const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
