@@ -20,21 +20,20 @@ export interface IInstr {
   id: string;
 }
 
-export interface ISetupInstr extends IInstr {
+export interface ISetupTournamentAccInstr extends IInstr {
   name: string;
   noTokens: number;
   useExisting: boolean;
   fundAcc: boolean;
 }
 
-export interface ISetupAccsInstr extends IInstr {
+export interface ICreateAccsInstr extends IInstr {
   noAccs: number;
   useExisting: boolean;
   fundAccs: boolean;
 }
 
 export interface ISetupResp {
-  tokens: Array<IToken>;
   tournament: IKeys;
 }
 
@@ -43,6 +42,12 @@ export interface ITransferSolInstr extends IInstr {
   source: IKeys;
   dest: IKeys;
   amount: number;
+}
+
+export interface IMintNftsInstr extends IInstr {
+  noTokens: number;
+  prefix: string;
+  tournament: IKeys | null;
 }
 
 export interface ITransferNftInstr extends IInstr {

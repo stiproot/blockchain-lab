@@ -4,15 +4,17 @@ const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
 const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
 const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
 const BURN_NFT_URL = `${API_HOST_URL}/sol/cmd/burn-nft`;
+const MINT_NFTS_URL = `${API_HOST_URL}/sol/cmd/mint-nfts`;
 
 const wrapInPromise = (data) => new Promise((resolve) => resolve(data));
 
 class SolProxyClient {
-  setup = async (payload, mock = false) => mock ? wrapInPromise(SETUP_RESP) : await callApi(SETUP_URL, payload);
+  setupTournament = async (payload, mock = false) => mock ? wrapInPromise(SETUP_RESP) : await callApi(SETUP_URL, payload);
   createAccs = async (payload, mock = false) => mock ? wrapInPromise(CREATE_ACCS_URL) : await callApi(CREATE_ACCS_URL, payload);
   transferSol = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(TRANSFER_SOL_URL, payload);
   transferNft = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(TRANSFER_NFT_URL, payload);
   burnNft = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(BURN_NFT_URL, payload);
+  mintNfts = async (payload, mock = false) => mock ? wrapInPromise([]) : await callApi(MINT_NFTS_URL, payload);
 }
 
 async function callApi(url, body = null, method = 'POST', headers = {}) {

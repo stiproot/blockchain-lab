@@ -18,7 +18,7 @@ LAB.md
 
 node_modules/
 
-.cfg/
+.cfg*/
 .env
 
 package-lock.json

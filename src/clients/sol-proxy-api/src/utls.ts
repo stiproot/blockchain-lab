@@ -13,7 +13,7 @@ import path from 'path';
 import yaml from 'yaml';
 import bs58 from 'bs58';
 import { IKeys } from './types';
-import { DEFAULT_NFT_URL } from './consts';
+import { DEFAULT_NFT_URL, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
     os.homedir(),
@@ -38,18 +38,23 @@ export async function createKeypairFromFile(filePath: string): Promise<Web3Keypa
     return Web3Keypair.fromSecretKey(secretKey);
 }
 
-export const buildCfgPath = (fileName: string): string => path.join(
-    path.resolve('.', '.cfg'),
-    fileName
-);
+export function buildCfgPath(fileName: string): string {
+    const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
+    return path.join(path.resolve('.', cfgDir), fileName);
+}
 
-export const buildTestWalletCfgName = (indx: number): string => `wallet-${indx}-keypair.json`;
+export const buildTestWalletCfgName = (indx: number): string => `wallet${indx}-keypair.json`;
 
 export const loadKeypairFromCfg = async (fileName: string): Promise<Web3Keypair> => await createKeypairFromFile(buildCfgPath(fileName));
 
 export async function loadDefaultWalletKeypair(): Promise<Web3Keypair> {
-    const configYml = await readFileContent(SOL_CLI_CONFIG_PATH);
-    const kpPath = await yaml.parse(configYml).keypair_path;
+    let kpPath = null;
+    if (process.env.SOLNET === 'localnet') {
+        const configYml = await readFileContent(SOL_CLI_CONFIG_PATH);
+        kpPath = await yaml.parse(configYml).keypair_path;
+    } else {
+        kpPath = buildCfgPath(DEFAULT_TOURNAMENT_CFG);
+    }
     const cliKp = await createKeypairFromFile(kpPath);
     return cliKp;
 }
@@ -61,7 +66,7 @@ export async function buildWalletKeypair(umi: Umi): Promise<UmiKeypair> {
 }
 
 export function translateInstrKeyToSigner(umi: Umi, keys: IKeys): KeypairSigner {
-    return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, Uint8Array.from(JSON.parse(keys.pk))));
+    return createSignerFromKeypair(umi, createUmiKeypairFromSecretKey(umi, strToUint8Array(keys.pk)));
 }
 
 export function getClusterUrl(): string {
@@ -89,3 +94,8 @@ export const buildTokenName = (name: string, tNo: number): string => `${name}:to
 export const buildTokenUri = (name: string, tNo: number): string => `${DEFAULT_NFT_URL}?tournament=${name}&token-${tNo}`;
 
 export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=custom`);
+
+export async function buildTestWalletUmiKeypair(umi: Umi, indx: number): Promise<UmiKeypair> {
+    const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
+    return createUmiKeypairFromSecretKey(umi, kp.secretKey);
+}

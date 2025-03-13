@@ -7,7 +7,7 @@ async function main() {
   const umi = buildUmi();
 
   // const walletKeypair = await buildWalletKeypair(umi);
-  const walletKp = await loadKeypairFromCfg('lt1-keypair.json');
+  const walletKp = await loadKeypairFromCfg('lt3-keypair.json');
   const walletUmiKp = translateWeb3ToUmiKeypair(umi, walletKp);
   const walletSigner = createSignerFromKeypair(umi, walletUmiKp);
 

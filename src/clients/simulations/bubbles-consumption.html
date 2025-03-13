@@ -24,28 +24,32 @@
     <script src="utls.js"></script>
     <script src="data.js"></script>
     <script>
+        const client = new SolProxyClient();
+
         const canvas = document.getElementById('bubbleCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+
         const EVT_PROBABILITY = 0.1;
-        const POP_PROBABILITY = 0.2;
+        const POP_PROBABILITY = 0.1;
         const RADIUS_INCREASE_UNIT = 8;
-        const NO_TOKENS = 10;
+        const NO_TOKENS = 3;
         const POP_ITERATION = 50;
         const POP_INTERVAL_MS = 1000;
         const Q_INTERVAL_MS = 1500;
-        let bubbles = [];
-        let accs = [];
-        let promiseQ = [];
-        const client = new SolProxyClient();
+        const USE_MOCKED_DATA = false;
+
+        let globalBubbles = [];
+        let globalAccs = [];
+        let globalTournament = { tournament: { pk: null } };
+        let globalPromiseQ = [];
         let globalInit = false;
         let globalQInit = false;
         let globalPop = false;
-        const globalMocked = false;
 
         function handlePromiseResolved(promiseId) {
-            promiseQ.shift();
+            globalPromiseQ.shift();
             globalQInit = false;
         }
 
@@ -53,9 +57,9 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: larger.metadata.tournament,
-                        source: larger.metadata.token.owner,
-                        dest: smaller.metadata.token.owner,
+                        tournament: globalTournament.tournament,
+                        source: larger.token.owners.at(-1),
+                        dest: smaller.token.owners.at(-1),
                     }
                 }
             };
@@ -63,7 +67,7 @@
 
             const promiseId = newId();
 
-            const promiseFactory = () => client.transferSol(payload, globalMocked)
+            const promiseFactory = () => client.transferSol(payload, USE_MOCKED_DATA)
                 .then(data => {
                     console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
                     handlePromiseResolved(promiseId);
@@ -77,10 +81,10 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: larger.metadata.tournament,
-                        source: smaller.metadata.token.owner,
-                        dest: larger.metadata.token.owner,
-                        mint: smaller.metadata.token.mint,
+                        tournament: globalTournament.tournament,
+                        source: smaller.token.owners.at(-1),
+                        dest: larger.token.owners.at(-1),
+                        mint: smaller.token.mint,
                     }
                 }
             };
@@ -88,7 +92,7 @@
 
             const promiseId = newId();
 
-            const promiseFactory = () => client.transferNft(payload, globalMocked)
+            const promiseFactory = () => client.transferNft(payload, USE_MOCKED_DATA)
                 .then(data => {
                     console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
                     handlePromiseResolved(promiseId);
@@ -102,9 +106,9 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: bubble.metadata.tournament,
-                        source: bubble.metadata.token.owner,
-                        mint: bubble.metadata.token.mint,
+                        tournament: globalTournament.tournament,
+                        source: bubble.token.owners.at(-1),
+                        mint: bubble.token.mint,
                     }
                 }
             };
@@ -112,7 +116,7 @@
 
             const promiseId = newId();
 
-            const promiseFactory = () => client.burnNft(payload, globalMocked)
+            const promiseFactory = () => client.burnNft(payload, USE_MOCKED_DATA)
                 .then(data => {
                     console.log('buildNftBurn()', 'promiseFactory', 'data', data);
                     handlePromiseResolved(promiseId);
@@ -123,23 +127,23 @@
         }
 
         function handleTransfer(smaller, larger) {
-            if (globalMocked) {
+            if (USE_MOCKED_DATA) {
                 return;
             }
 
             const solT = buildSolTransfer(smaller, larger);
-            promiseQ.push(solT);
+            globalPromiseQ.push(solT);
 
             const nftT = buildNftTransfer(smaller, larger);
-            promiseQ.push(nftT);
+            globalPromiseQ.push(nftT);
         }
 
         function handleBurn(bubble) {
-            if (globalMocked) {
+            if (USE_MOCKED_DATA) {
                 return;
             }
             const t = buildNftBurn(bubble);
-            promiseQ.push(t);
+            globalPromiseQ.push(t);
         }
 
         function handleCollision(b1, b2) {
@@ -155,7 +159,7 @@
             let smaller = b1.radius > b2.radius ? b2 : b1;
 
             larger.radius += RADIUS_INCREASE_UNIT;
-            bubbles = bubbles.filter(b => b !== smaller);
+            globalBubbles = globalBubbles.filter(b => b !== smaller);
 
             handleTransfer(smaller, larger);
         }
@@ -172,15 +176,8 @@
             }
         }
 
-        class Metadata {
-            constructor(token, tournament) {
-                this.token = token;
-                this.tournament = tournament;
-            }
-        }
-
         class Bubble {
-            constructor(x, y, radius, metadata) {
+            constructor(x, y, radius, token) {
                 this.x = x;
                 this.y = y;
                 this.radius = radius;
@@ -188,7 +185,7 @@
                 this.dy = (Math.random() - 0.5) * 2;
                 this.wobbleFactor = Math.random() * 0.2 + 0.1;
                 this.color = 'lightgray';
-                this.metadata = metadata;
+                this.token = token;
                 this.popIteration = 0;
                 this.popping = false;
             }
@@ -229,10 +226,10 @@
         }
 
         function detectCollisions() {
-            for (let i = 0; i < bubbles.length; i++) {
-                for (let j = i + 1; j < bubbles.length; j++) {
-                    let b1 = bubbles[i];
-                    let b2 = bubbles[j];
+            for (let i = 0; i < globalBubbles.length; i++) {
+                for (let j = i + 1; j < globalBubbles.length; j++) {
+                    let b1 = globalBubbles[i];
+                    let b2 = globalBubbles[j];
                     let dx = b2.x - b1.x;
                     let dy = b2.y - b1.y;
                     let distance = Math.sqrt(dx * dx + dy * dy);
@@ -246,14 +243,14 @@
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            bubbles.forEach(bubble => {
+            globalBubbles.forEach(bubble => {
                 bubble.move();
                 bubble.draw();
             });
-            popped = bubbles.filter(bubble => bubble.popIteration >= POP_ITERATION);
+            popped = globalBubbles.filter(bubble => bubble.popIteration >= POP_ITERATION);
             if (popped.length) {
-                bubbles = bubbles.filter(bubble => bubble.popIteration < POP_ITERATION);
-                for (const b of bubbles) {
+                globalBubbles = globalBubbles.filter(bubble => bubble.popIteration < POP_ITERATION);
+                for (const b of globalBubbles) {
                     handleBurn(b);
                 }
                 globalPop = false;
@@ -262,14 +259,44 @@
             requestAnimationFrame(animate);
         }
 
-        function initBubblesData(setupData) {
-            for (let i = 0; i < setupData.tokens.length; i++) {
+        async function setupTournament() {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        name: 't1',
+                        noTokens: NO_TOKENS,
+                        useExisting: true,
+                        fundAcc: false,
+                    }
+                }
+            };
+            const tournament = await client.setupTournament(payload, USE_MOCKED_DATA);
+            console.log('setupTournament', 'tournament', tournament);
+            globalTournament = tournament;
+        }
+
+        async function createAccs() {
+            const payload = {
+                cmdData: {
+                    instr: {
+                        noAccs: NO_TOKENS,
+                        useExisting: true,
+                        fundAccs: false,
+                    }
+                }
+            };
+            const accs = await client.createAccs(payload, USE_MOCKED_DATA);
+            console.log('createAccs', 'accs', accs);
+            globalAccs = accs;
+        }
+
+        function initBubblesData(tokens) {
+            for (let i = 0; i < tokens.length; i++) {
                 let radius = Math.random() * 30 + 10;
                 let x = Math.random() * (canvas.width - radius * 2) + radius;
                 let y = Math.random() * (canvas.height - radius * 2) + radius;
 
-                const metadata = new Metadata(setupData.tokens[i], setupData.tournament);
-                bubbles.push(new Bubble(x, y, radius, metadata));
+                globalBubbles.push(new Bubble(x, y, radius, tokens[i]));
             }
         }
 
@@ -277,57 +304,36 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        name: 'bc-2',
+                        prefix: 'bc-5',
                         noTokens: NO_TOKENS,
-                        fundAcc: true,
                     }
                 }
             };
-            const setupData = await client.setup(payload, globalMocked);
-            initBubblesData(setupData);
+            const tokens = await client.mintNfts(payload, USE_MOCKED_DATA);
+            initBubblesData(tokens);
         }
 
-        function initAccsData(setupData) {
-            console.log('initAccsData', 'setupData', setupData);
-            accs = setupData;
-        }
-
-        async function initAccs() {
+        async function initLink(acc, token) {
             const payload = {
                 cmdData: {
                     instr: {
-                        noAccs: NO_TOKENS,
-                        useExisting: true,
-                        fundAccs: true,
-                    }
-                }
-            };
-            const setupData = await client.createAccs(payload, globalMocked);
-            console.log('initAccs', 'setupData', setupData);
-            initAccsData(setupData);
-        }
-
-        async function initLink(acc, metadata) {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: metadata.tournament,
-                        mint: metadata.token.mint,
-                        dest: acc, source: metadata.tournament,
-                        useExisting: true
+                        mint: token.mint,
+                        tournament: globalTournament.tournament,
+                        source: globalTournament.tournament,
+                        dest: acc,
                     }
                 }
             };
             console.log('initLink()', 'payload', payload);
-            await client.transferNft(payload, globalMocked);
+            await client.transferNft(payload, USE_MOCKED_DATA);
 
-            const bubble = bubbles.filter(b => b.metadata.token.indx === metadata.token.indx)[0];
+            const bubble = globalBubbles.filter(b => b.token.indx === token.indx)[0];
             bubble.color = getRandomColor();
-            bubble.metadata.token.owner = acc;
+            bubble.token.owners = [acc];
         }
 
         async function initLinks() {
-            await Promise.all(bubbles.map((v, i) => initLink(accs[i], v.metadata)));
+            await Promise.all(globalBubbles.map((b, i) => initLink(globalAccs[i], b.token)));
         }
 
         function initPopInterval() {
@@ -340,12 +346,12 @@
                     return;
                 }
 
-                if (!bubbles.length) {
+                if (!globalBubbles.length) {
                     return;
                 }
 
                 globalPop = true;
-                const bubble = bubbles[Math.floor(Math.random() * bubbles.length)];
+                const bubble = globalBubbles[Math.floor(Math.random() * globalBubbles.length)];
                 console.log('bubble to pop', bubble);
                 bubble.popping = true
             }, POP_INTERVAL_MS);
@@ -353,21 +359,28 @@
 
         function initQInterval() {
             setInterval(() => {
-                if (!promiseQ.length) {
+                if (!globalPromiseQ.length) {
                     return;
                 }
 
                 if (!globalQInit) {
-                    promiseQ[0].invoke();
+                    globalPromiseQ[0].invoke();
                     globalQInit = true;
                     return;
                 }
             }, Q_INTERVAL_MS);
         }
 
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         async function init() {
-            await Promise.all([initBubbles(), initAccs()])
+            await setupTournament();
+            await createAccs();
+            await initBubbles();
             animate();
+            await sleep(10_000);
             await initLinks();
             globalInit = true;
             initPopInterval();

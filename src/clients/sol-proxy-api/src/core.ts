@@ -10,12 +10,18 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildWalletKeypair, loadDefaultWalletKeypair, loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, buildTestWalletCfgName, uint8ArrayToStr, buildTokenName, buildTokenUri, logTransactionLink } from './utls';
-import { IBurnNftInstr, IKeys, ISetupAccsInstr, ISetupInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
+import { loadKeypairFromCfg, buildUmi, createConn, translateInstrKeyToSigner, createUmiKeypairFromSecretKey, range, uint8ArrayToStr, buildTokenName, buildTokenUri, logTransactionLink, buildTestWalletUmiKeypair } from './utls';
+import { IBurnNftInstr, IKeys, IMintNftsInstr, ICreateAccsInstr, ISetupTournamentAccInstr, ISetupResp, IToken, ITransferNftInstr, ITransferSolInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 
-async function mintNftCore(umi: Umi, name: string, uri: string, signer: KeypairSigner | null = null): Promise<KeypairSigner> {
+async function mintNftCore(
+  umi: Umi,
+  name: string,
+  uri: string,
+  tokenOwner: PublicKey,
+  signer: KeypairSigner | null = null
+): Promise<KeypairSigner> {
   const mint: KeypairSigner = signer || generateSigner(umi);
 
   const builder = createNft(umi, {
@@ -23,10 +29,12 @@ async function mintNftCore(umi: Umi, name: string, uri: string, signer: KeypairS
     name,
     uri,
     sellerFeeBasisPoints: percentAmount(DEFAULT_SELLER_FEE_BASIS_POINTS_AMT),
-    isMutable: true,
+    // isMutable: true,
+    tokenOwner: tokenOwner
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
+  console.log('mintNftCore()', 'mint.pubkey', mint.publicKey);
   logTransactionLink('mintNftCore()', signature);
 
   return mint;
@@ -84,7 +92,7 @@ export async function burnNftCore(
   logTransactionLink('burnNftCore()', signature);
 }
 
-async function createAccount(
+async function createAccCore(
   umi: Umi,
   connection: Connection,
   fundingWallet: Web3Keypair,
@@ -108,11 +116,6 @@ async function createAccount(
   return createUmiKeypairFromSecretKey(umi, web3Keypair.secretKey);
 }
 
-async function getWalletKeypairFromFile(umi: Umi, indx: number): Promise<UmiKeypair> {
-  const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
-  return createUmiKeypairFromSecretKey(umi, kp.secretKey);
-}
-
 async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {
   const connection: Connection = createConn();
   const signature = await connection.requestAirdrop(
@@ -125,95 +128,81 @@ async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_S
   console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`, 'signature', signature);
 }
 
-export async function setupAccs(instr: ISetupAccsInstr): Promise<Array<IKeys>> {
-  const connection: Connection = createConn();
-  const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
-
+export async function createAccs(instr: ICreateAccsInstr): Promise<Array<IKeys>> {
   const umi = buildUmi();
-  const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
-  const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
-  const payerSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
+  const payerWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const payerUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, payerWeb3Keypair.secretKey);
+  const payerSigner: KeypairSigner = createSignerFromKeypair(umi, payerUmiKeypair);
+
   umi.use(keypairIdentity(payerSigner));
 
   const indxs = range(0, instr.noAccs);
 
   let newAccs = [];
   if (instr.useExisting) {
-    newAccs = await Promise.all(indxs.map(i => getWalletKeypairFromFile(umi, i)));
+    console.log('setupAccs()', 'useExisting', true);
+    newAccs = await Promise.all(indxs.map(i => buildTestWalletUmiKeypair(umi, i)));
   }
   else {
-    newAccs = await Promise.all(indxs.map(i => createAccount(umi, connection, walletWeb3Keypair, lamports)));
+    console.log('setupAccs()', 'useExisting', false);
+    const connection: Connection = createConn();
+    const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
+    newAccs = await Promise.all(indxs.map(i => createAccCore(umi, connection, payerWeb3Keypair, lamports)));
   }
 
   if (instr.fundAccs) {
+    console.log('setupAccs()', 'funding accounts');
     await Promise.all(newAccs.map(a => airdropSol(a.publicKey.toString())));
   }
 
-  return newAccs.map(na => ({ pk: JSON.stringify(Array.from(na.secretKey)) } as IKeys));
+  return newAccs.map(na => ({ pk: uint8ArrayToStr(na.secretKey) } as IKeys));
 }
 
-export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
-  const connection: Connection = createConn();
+export async function mintNfts(instr: IMintNftsInstr): Promise<Array<IToken>> {
+  const umi = buildUmi();
+  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
+  const tournamentSigner: KeypairSigner = createSignerFromKeypair(umi, tournamentUmiKeypair);
 
-  // CREATE TOURNAMENT ACC...
-  const walletWeb3Keypair: Web3Keypair = await loadDefaultWalletKeypair();
-  const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
-
-  const tournamentWeb3Keypair: Web3Keypair = instr.useExisting ? await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG) : Web3Keypair.generate();
-
-  if (!instr.useExisting) {
-    const transaction = new Transaction().add(
-      SystemProgram.createAccount({
-        fromPubkey: walletWeb3Keypair.publicKey, // Funding wallet
-        newAccountPubkey: tournamentWeb3Keypair.publicKey,
-        lamports, // Minimum SOL needed
-        space: 0, // Space required
-        programId: SystemProgram.programId, // Assign to system program
-      })
-    );
-    await sendAndConfirmTransaction(connection, transaction, [walletWeb3Keypair, tournamentWeb3Keypair]);
-    if (instr.fundAcc) {
-      await airdropSol(tournamentWeb3Keypair.publicKey.toString());
-    }
-  }
-
-  console.log("Trusted wallet created:", tournamentWeb3Keypair.publicKey.toBase58());
+  umi.use(keypairIdentity(tournamentSigner));
 
   const tokenIndxs = range(0, instr.noTokens);
 
-  // INIT UMI...
-  const umi = buildUmi();
-  const walletUmiKeypair: UmiKeypair = await buildWalletKeypair(umi);
-  const walletSigner: KeypairSigner = createSignerFromKeypair(umi, walletUmiKeypair);
-
-  const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
-
-  umi.use(keypairIdentity(walletSigner));
-
-  // MINT NFTS...
-  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNftCore(umi, buildTokenName(instr.name, ti), buildTokenUri(instr.name, ti)));
+  console.log('mintNfts()', 'attempting minting...');
+  const mintAuthsPromises: Array<Promise<KeypairSigner>> = tokenIndxs.map(ti => mintNftCore(
+    umi,
+    buildTokenName(instr.prefix, ti),
+    buildTokenUri(instr.prefix, ti),
+    tournamentUmiKeypair.publicKey
+  ));
   const mintAuths: Array<KeypairSigner> = await Promise.all(mintAuthsPromises);
 
-  // TRANSER...
-  const transferPromises = mintAuths.map(ma => transferNftCore(
-    umi,
-    ma.publicKey,
-    walletSigner,
-    walletUmiKeypair.publicKey,
-    tournamentUmiKeypair.publicKey,
-  ));
+  const resp = mintAuths.map((v, i) => ({
+    indx: i,
+    mint: { pk: uint8ArrayToStr(v.secretKey) } as IKeys,
+    owner: { pk: uint8ArrayToStr(tournamentSigner.secretKey) } as IKeys
+  } as IToken));
 
-  await Promise.all(transferPromises);
+  return resp;
+}
 
-  return {
-    tokens: mintAuths.map((v, i) => ({
-      indx: i,
-      mint: {
-        pk: uint8ArrayToStr(v.secretKey)
-      } as IKeys,
-    } as IToken)),
-    tournament: { pk: uint8ArrayToStr(tournamentUmiKeypair.secretKey) } as IKeys
+export async function setupTournamentAcc(instr: ISetupTournamentAccInstr): Promise<ISetupResp> {
+  const umi = buildUmi();
+  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
+  const tournamentSigner: KeypairSigner = createSignerFromKeypair(umi, tournamentUmiKeypair);
+
+  umi.use(keypairIdentity(tournamentSigner));
+
+  console.log("setupTournament()", 'pubkey', tournamentWeb3Keypair.publicKey.toBase58());
+
+  const resp = {
+    tournament: {
+      pk: uint8ArrayToStr(tournamentUmiKeypair.secretKey)
+    } as IKeys
   } as ISetupResp;
+
+  return resp;
 }
 
 export async function transferSol(instr: ITransferSolInstr) {
@@ -238,17 +227,32 @@ export async function transferNft(instr: ITransferNftInstr) {
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
   umi.use(keypairIdentity(tournamentSigner));
-  const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
+
+  const mintSigner = translateInstrKeyToSigner(umi, instr.mint);
+  const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest);
 
   if (instr.source.pk !== instr.tournament.pk) {
+    console.log('transferNft()', 'source.pk != tournament.pk', 'attempting transfer...');
     // Transfer NFT from source user to trusted wallet...
     const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
-    await transferNftCore(umi, mintSigner.publicKey, sourceUserWalletSigner, sourceUserWalletSigner.publicKey, tournamentSigner.publicKey);
+    await transferNftCore(
+      umi,
+      mintSigner.publicKey,
+      sourceUserWalletSigner,
+      sourceUserWalletSigner.publicKey,
+      tournamentSigner.publicKey
+    );
   }
 
+  console.log('transferNft()', 'attempting transfer...');
   // Transfer NFT from trusted wallet to dest user wallet...
-  const destUserWalletSigner = translateInstrKeyToSigner(umi, instr.dest!);
-  await transferNftCore(umi, mintSigner.publicKey, tournamentSigner, tournamentSigner.publicKey, destUserWalletSigner.publicKey);
+  await transferNftCore(
+    umi,
+    mintSigner.publicKey,
+    tournamentSigner,
+    tournamentSigner.publicKey,
+    destUserWalletSigner.publicKey
+  );
 
   return {};
 }
@@ -258,7 +262,7 @@ export async function burnNft(instr: IBurnNftInstr) {
 
   const tournamentSigner = translateInstrKeyToSigner(umi, instr.tournament);
   umi.use(keypairIdentity(tournamentSigner));
-  const mintSigner = translateInstrKeyToSigner(umi, instr.mint!);
+  const mintSigner = translateInstrKeyToSigner(umi, instr.mint);
 
   // Transfer NFT from source user to trusted wallet...
   const sourceUserWalletSigner = translateInstrKeyToSigner(umi, instr.source);
