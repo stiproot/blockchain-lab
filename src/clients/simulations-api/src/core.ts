@@ -5,8 +5,8 @@ import {
   Keypair as Web3Keypair,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
-import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, uint8ArrayToStr, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
-import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd, IInstr } from './types';
+import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
+import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd } from './types';
 import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 import { SolProxyClient } from './sol-proxy-client';
@@ -24,13 +24,10 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
 
   umi.use(keypairIdentity(tournamentSigner));
 
-  console.log("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58());
-  console.log("setup()", 'tournament.pubkey', tournamentUmiKeypair.publicKey.toString());
-
   const accs = await createAccs(instr.noPlayers, instr.useExisting, instr.fundAccs);
-  console.log('setup()', 'accs', accs);
   const tokens = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
-  console.log('setup()', 'tokens', tokens);
+
+  console.debug("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58(), 'accs', accs, 'tokens', tokens);
 
   const resp = {
     tournament: {
@@ -141,7 +138,6 @@ async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_S
     amountSol * LAMPORTS_PER_SOL
   );
 
-  // Wait for confirmation
   await connection.confirmTransaction(signature);
   console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`, 'signature', signature);
 }

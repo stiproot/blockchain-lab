@@ -1,12 +1,8 @@
-import { buildUmi, buildWalletKeypair, loadKeypairFromCfg, createUmiKeypairFromSecretKey } from './utls';
-import { createSignerFromKeypair, generateSigner, keypairIdentity, sol } from '@metaplex-foundation/umi';
-import { transferSol } from '@metaplex-foundation/mpl-toolbox';
-
+import { buildUmi, loadKeypairFromCfg, createUmiKeypairFromSecretKey } from './utls';
+import { createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi';
 
 async function main() {
-
   const umi = buildUmi();
-
   const kp = await loadKeypairFromCfg('tournament-keypair.json');
   const umiKp = createUmiKeypairFromSecretKey(umi, kp.secretKey);
   const signer = createSignerFromKeypair(umi, umiKp);
