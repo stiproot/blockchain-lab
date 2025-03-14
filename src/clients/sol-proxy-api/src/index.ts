@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { procQry } from "./qrys";
-import { procSetupTournamentAccCmd, procTransferSolCmd, procBurnNftCmd, procTransferNftCmd, procMintNftsCmd, procCreateAccsCmd } from "./cmds";
+import { procTransferSolCmd, procTransferTokenCmd, procBurnTokenCmd, procMintTokenCmd, procMintTokensCmd, procCreateAccCmd } from "./cmds";
 import { Request, Response } from 'express';
 
 require("dotenv").config();
@@ -13,12 +13,12 @@ const app = express();
 app.use(cors());
 
 // CMDS...
-app.post(`${BASE_URL}/cmd/setup`, express.json(), procSetupTournamentAccCmd);
-app.post(`${BASE_URL}/cmd/create-accs`, express.json(), procCreateAccsCmd);
 app.post(`${BASE_URL}/cmd/transfer-sol`, express.json(), procTransferSolCmd);
-app.post(`${BASE_URL}/cmd/transfer-nft`, express.json(), procTransferNftCmd);
-app.post(`${BASE_URL}/cmd/burn-nft`, express.json(), procBurnNftCmd);
-app.post(`${BASE_URL}/cmd/mint-nfts`, express.json(), procMintNftsCmd);
+app.post(`${BASE_URL}/cmd/transfer-token`, express.json(), procTransferTokenCmd);
+app.post(`${BASE_URL}/cmd/burn-token`, express.json(), procBurnTokenCmd);
+app.post(`${BASE_URL}/cmd/mint-token`, express.json(), procMintTokenCmd);
+app.post(`${BASE_URL}/cmd/mint-tokens`, express.json(), procMintTokensCmd);
+app.post(`${BASE_URL}/cmd/create-acc`, express.json(), procCreateAccCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);

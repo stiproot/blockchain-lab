@@ -1,75 +1,75 @@
 import { Response } from 'express';
-import { IReq, ICmd, ISetupTournamentAccInstr, ICreateAccsInstr, ITransferSolInstr, ITransferNftInstr, IBurnNftInstr, IMintNftsInstr } from './types';
-import { createAccs, transferNft, transferSol, burnNft, mintNfts, setupTournamentAcc } from './core';
-
-export const procSetupTournamentAccCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procSetupTournamentCmd START.`);
-
-  const { instr }: { instr: ISetupTournamentAccInstr } = req.body.cmdData;
-  console.log(`instr`, instr);
-
-  const resp = await setupTournamentAcc(instr);
-
-  console.info(`procSetupTournamentCmd END.`);
-  res.status(200).json(resp);
-};
-
-export const procCreateAccsCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procSetupAccsCmd START.`);
-
-  const { instr }: { instr: ICreateAccsInstr } = req.body.cmdData;
-  console.log(`instr`, instr);
-
-  const resp = await createAccs(instr);
-
-  console.info(`procSetupAccsCmd END.`);
-  res.status(200).json(resp);
-};
+import { IReq, ICmd, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr } from './types';
+import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken } from './core';
 
 export const procTransferSolCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procTransferSol START.`);
+  console.info(`procTransferSolCmd START.`);
 
   const { instr }: { instr: ITransferSolInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
   const resp = await transferSol(instr);
 
-  console.info(`procTransferSol END.`);
+  console.info(`procTransferSolCmd END.`);
   res.status(200).json(resp);
 };
 
-export const procTransferNftCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procTransferNft START.`);
+export const procTransferTokenCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procTransferTokenCmd START.`);
 
-  const { instr }: { instr: ITransferNftInstr } = req.body.cmdData;
+  const { instr }: { instr: ITransferTokenInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
-  const resp = await transferNft(instr);
+  const resp = await transferToken(instr);
 
-  console.info(`procTransferNft END.`);
+  console.info(`procTransferTokenCmd END.`);
   res.status(200).json(resp);
 };
 
-export const procBurnNftCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procBurnNft START.`);
+export const procBurnTokenCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procBurnTokenCmd START.`);
 
-  const { instr }: { instr: IBurnNftInstr } = req.body.cmdData;
+  const { instr }: { instr: IBurnTokenInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
-  const resp = await burnNft(instr);
+  const resp = await burnToken(instr);
 
-  console.info(`procBurnNft END.`);
+  console.info(`procBurnTokenCmd END.`);
   res.status(200).json(resp);
 };
 
-export const procMintNftsCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procMintNftsCmd START.`);
+export const procMintTokenCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procMintTokenCmd START.`);
 
-  const { instr }: { instr: IMintNftsInstr } = req.body.cmdData;
+  const { instr }: { instr: IMintTokenInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
-  const resp = await mintNfts(instr);
+  const resp = await mintToken(instr);
 
-  console.info(`procMintNftsCmd END.`);
+  console.info(`procMintTokenCmd END.`);
+  res.status(200).json(resp);
+};
+
+export const procMintTokensCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procMintTokensCmd START.`);
+
+  const { instr }: { instr: IMintTokensInstr } = req.body.cmdData;
+  console.log(`instr`, instr);
+
+  const resp = await mintTokens(instr);
+
+  console.info(`procMintTokensCmd END.`);
+  res.status(200).json(resp);
+};
+
+export const procCreateAccCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procSetupAccCmd START.`);
+
+  const { instr }: { instr: ICreateAccInstr } = req.body.cmdData;
+  console.log(`instr`, instr);
+
+  const resp = await createAcc(instr);
+
+  console.info(`procSetupAccCmd END.`);
   res.status(200).json(resp);
 };

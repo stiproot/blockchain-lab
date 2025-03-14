@@ -20,52 +20,42 @@ export interface IInstr {
   id: string;
 }
 
-export interface ISetupTournamentAccInstr extends IInstr {
+export interface IToken {
+  indx: number;
+  owner?: IKeys;
+  mint: IKeys;
+}
+
+export interface IMintTokenInstr extends IInstr {
+  payer: IKeys;
+  owner: IKeys;
   name: string;
-  noTokens: number;
-  useExisting: boolean;
-  fundAcc: boolean;
+  uri: string;
 }
 
-export interface ICreateAccsInstr extends IInstr {
-  noAccs: number;
-  useExisting: boolean;
-  fundAccs: boolean;
-}
-
-export interface ISetupResp {
-  tournament: IKeys;
+export interface IMintTokensInstr extends IInstr {
+  instrs: Array<IMintTokenInstr>;
 }
 
 export interface ITransferSolInstr extends IInstr {
-  tournament: IKeys;
   source: IKeys;
   dest: IKeys;
   amount: number;
 }
 
-export interface IMintNftsInstr extends IInstr {
-  noTokens: number;
-  prefix: string;
-  tournament: IKeys | null;
-}
-
-export interface ITransferNftInstr extends IInstr {
-  tournament: IKeys;
+export interface ITransferTokenInstr extends IInstr {
   source: IKeys;
   dest: IKeys;
   mint: IKeys;
 }
 
-export interface IBurnNftInstr extends IInstr {
-  tournament: IKeys;
-  source: IKeys;
+export interface IBurnTokenInstr extends IInstr {
+  owner: IKeys;
   mint: IKeys;
 }
 
-
-export interface IToken {
-  indx: number;
-  owner?: IKeys;
-  mint: IKeys;
+export interface ICreateAccInstr extends IInstr {
+  payer: IKeys;
+  useExisting: boolean;
+  fundAcc: boolean;
 }

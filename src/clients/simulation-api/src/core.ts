@@ -1,0 +1,130 @@
+import { createSignerFromKeypair, keypairIdentity, KeypairSigner, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import {
+  PublicKey as Web3PublicKey,
+  Connection,
+  Keypair as Web3Keypair,
+  LAMPORTS_PER_SOL
+} from '@solana/web3.js';
+import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, uint8ArrayToStr, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
+import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr } from './types';
+import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
+
+import { SolProxyClient } from './sol-proxy-client';
+
+const solProxyClient = new SolProxyClient();
+
+export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
+  const umi = buildUmi();
+
+  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
+  const tournamentSigner: KeypairSigner = createSignerFromKeypair(umi, tournamentUmiKeypair);
+
+  umi.use(keypairIdentity(tournamentSigner));
+
+  console.log("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58());
+
+  const accs = await createAccs(instr.noPlayers, instr.useExisting, instr.fundAccs);
+  const tokens = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
+
+  const resp = {
+    tournament: {
+      pk: uint8ArrayToStr(tournamentUmiKeypair.secretKey)
+    } as IKeys,
+    accs: accs,
+    tokens: tokens,
+  } as ISetupResp;
+
+  return resp;
+}
+
+export async function collision(instr: ICollisionInstr): Promise<any> {
+  const transferSolPayload = {
+    payer: instr.tournament,
+    source: instr.source,
+    dest: instr.dest,
+    amt: DEFAULT_SOL_FUND_AMT
+  };
+  await solProxyClient.transferSol(transferSolPayload);
+
+  const transferTokenPayload = {
+    payer: instr.tournament,
+    source: instr.source,
+    dest: instr.dest,
+    mint: instr.mint
+  };
+  await solProxyClient.transferToken(transferTokenPayload);
+
+  return {};
+}
+
+export async function pop(instr: IPopInstr): Promise<any> {
+  const transferTokenPayload = {
+    payer: instr.tournament,
+    source: instr.source,
+    dest: instr.dest,
+    mint: instr.mint
+  };
+  await solProxyClient.transferToken(transferTokenPayload);
+
+  const burnTokenPayload = {
+    payer: instr.tournament,
+    owner: instr.tournament,
+    mint: null
+  };
+  const burnToken = await solProxyClient.burnToken(burnTokenPayload);
+
+  return {};
+}
+
+async function createAccs(
+  noAccs: number,
+  useExistingAccs: boolean = true,
+  fundAccs: boolean = false
+): Promise<Array<IKeys>> {
+  const umi = buildUmi();
+  const payerWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const payerUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, payerWeb3Keypair.secretKey);
+  const payerSigner: KeypairSigner = createSignerFromKeypair(umi, payerUmiKeypair);
+
+  umi.use(keypairIdentity(payerSigner));
+
+  const indxs = range(0, noAccs);
+  const accs = await Promise.all(indxs.map(i => buildTestWalletUmiKeypair(umi, i)));
+
+  if (fundAccs) {
+    console.log('createAccs()', 'funding accounts');
+    await Promise.all(accs.map(a => airdropSol(a.publicKey.toString())));
+  }
+
+  return accs.map(a => ({ pk: uint8ArrayToStr(a.secretKey) } as IKeys));
+}
+
+async function createTokens(
+  noTokens: number,
+  owner: string,
+  prefix: string,
+): Promise<Array<IToken>> {
+  const tokenIndxs = range(0, noTokens);
+  const mintTokenPromises: Array<Promise<any>> = tokenIndxs.map(ti => solProxyClient.mintToken(
+    {
+      name: buildTokenName(prefix, ti),
+      uri: buildTokenUri(prefix, ti),
+      owner: owner
+    }
+  ));
+  const tokenPubKeys = await Promise.all(mintTokenPromises);
+  return tokenPubKeys.map(t => ({ pk: t } as any as IToken));
+}
+
+async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {
+  const connection: Connection = createConn();
+  const signature = await connection.requestAirdrop(
+    new Web3PublicKey(recipientPubKey),
+    amountSol * LAMPORTS_PER_SOL
+  );
+
+  // Wait for confirmation
+  await connection.confirmTransaction(signature);
+  console.log(`Airdropped ${amountSol} SOL to ${recipientPubKey}`, 'signature', signature);
+}

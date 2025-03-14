@@ -3,7 +3,6 @@ import {
     clusterApiUrl,
     Keypair as Web3Keypair,
     Cluster,
-    PublicKey,
 } from '@solana/web3.js';
 import { Keypair as UmiKeypair, Umi, createSignerFromKeypair, KeypairSigner } from '@metaplex-foundation/umi';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
@@ -26,7 +25,6 @@ const SOL_CLI_CONFIG_PATH = path.resolve(
 
 export const strToUint8Array = (str: string): Uint8Array => Uint8Array.from(JSON.parse(str));
 export const uint8ArrayToStr = (arr: Uint8Array) => JSON.stringify(Array.from(arr));
-export const strToPubKey = (str: string): PublicKey => new PublicKey(str);
 
 export const readFileContent = async (filePath: string) => await fs.readFile(filePath, { encoding: 'utf8' });
 
