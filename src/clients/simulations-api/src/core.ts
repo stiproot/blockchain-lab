@@ -76,7 +76,7 @@ export async function pop(instr: IPopInstr): Promise<any> {
   const burnTokenPayload = {
     payer: instr.tournament,
     owner: instr.tournament,
-    mint: null
+    mint: instr.mint
   };
   await solProxyClient.burnToken(buildCmd(burnTokenPayload));
 
