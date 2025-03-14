@@ -12,7 +12,7 @@ export class HttpClient {
     endpoint: string,
     body?: any
   ): Promise<T> {
-    const response = await fetch(`${this._baseUrl}${endpoint}`, {
+    const response = await fetch(`${this._baseUrl}/${endpoint}`, {
       method,
       headers: {
         "Content-Type": "application/json",

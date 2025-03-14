@@ -1,11 +1,12 @@
 import { HttpClient } from "./http-client";
-import { IToken } from "./types";
 
-const MINT_TOKEN_ROUTE = `mint-token`;
-const MINT_TOKENS_ROUTE = `mint-tokens`;
-const TRANSFER_SOL_ROUTE = `transfer-sol`;
-const TRANSFER_TOKEN_ROUTE = `transfer-token`;
-const BURN_TOKEN_ROUTE = `burn-token`;
+require("dotenv").config();
+
+const MINT_TOKEN_ROUTE = `sol/cmd/mint-token`;
+const MINT_TOKENS_ROUTE = `sol/cmd/mint-tokens`;
+const TRANSFER_SOL_ROUTE = `sol/cmd/transfer-sol`;
+const TRANSFER_TOKEN_ROUTE = `sol/cmd/transfer-token`;
+const BURN_TOKEN_ROUTE = `sol/cmd/burn-token`;
 
 export class SolProxyClient {
   private readonly _baseUrl: string;

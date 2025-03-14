@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { IReq, ICmd, ISetupInstr, ICollisionInstr, IPopInstr } from './types';
-import { collision, pop, setup } from './core';
+import { IReq, ICmd, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr } from './types';
+import { collision, enterPlayer, pop, setup } from './core';
 
 export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
   console.info(`procSetupCmd START.`);
@@ -10,30 +10,42 @@ export const procSetupCmd = async (req: IReq<ICmd>, res: Response) => {
 
   const resp = await setup(instr);
 
-  console.info(`procSetupTournamentCmd END.`);
+  console.info(`procSetupCmd END.`);
   res.status(200).json(resp);
 };
 
 export const procCollisionCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procTransferSol START.`);
+  console.info(`procCollisionCmd START.`);
 
   const { instr }: { instr: ICollisionInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
   const resp = await collision(instr);
 
-  console.info(`procTransferSol END.`);
+  console.info(`procCollisionCmd END.`);
   res.status(200).json(resp);
 };
 
 export const procPopCmd = async (req: IReq<ICmd>, res: Response) => {
-  console.info(`procTransferNft START.`);
+  console.info(`procPopCmd START.`);
 
   const { instr }: { instr: IPopInstr } = req.body.cmdData;
   console.log(`instr`, instr);
 
   const resp = await pop(instr);
 
-  console.info(`procTransferNft END.`);
+  console.info(`procPopCmd END.`);
+  res.status(200).json(resp);
+};
+
+export const procEnterPlayerCmd = async (req: IReq<ICmd>, res: Response) => {
+  console.info(`procEnterPlayerCmd START.`);
+
+  const { instr }: { instr: IEnterPlayerInstr } = req.body.cmdData;
+  console.log(`instr`, instr);
+
+  const resp = await enterPlayer(instr);
+
+  console.info(`procEnterPlayerCmd END.`);
   res.status(200).json(resp);
 };

@@ -41,8 +41,13 @@ export interface IPopInstr extends IInstr {
   mint: IKeys;
 }
 
+export interface IEnterPlayerInstr extends IInstr {
+  tournament: IKeys;
+  dest: IKeys;
+  mint: IKeys;
+}
+
 export interface IToken {
-  indx: number;
-  owner?: IKeys;
+  owner: IKeys;
   mint: IKeys;
 }

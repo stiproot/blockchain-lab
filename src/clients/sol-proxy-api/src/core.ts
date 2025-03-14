@@ -10,7 +10,7 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink } from './utls';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, saveKeypairToFile } from './utls';
 import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
 import { IKeyStore, KeyStore } from './store';
@@ -163,6 +163,9 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
     instr.uri,
     ownerKps.umiKp.publicKey,
   );
+
+  saveKeypairToFile(token.secretKey);
+  keyStore.loadTokens();
 
   const resp = {
     mint: { pk: token.publicKey.toString() } as IKeys,

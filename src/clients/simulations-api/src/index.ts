@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
-import { procSetupCmd, procCollisionCmd, procPopCmd } from "./cmds";
+import { procSetupCmd, procCollisionCmd, procPopCmd, procEnterPlayerCmd } from "./cmds";
 import { Request, Response } from 'express';
 
 require("dotenv").config();
 
 const BASE_URL = "/sim";
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 const app = express();
 app.use(cors());
@@ -15,6 +15,7 @@ app.use(cors());
 app.post(`${BASE_URL}/cmd/setup`, express.json(), procSetupCmd);
 app.post(`${BASE_URL}/cmd/collision`, express.json(), procCollisionCmd);
 app.post(`${BASE_URL}/cmd/pop`, express.json(), procPopCmd);
+app.post(`${BASE_URL}/cmd/enter-player`, express.json(), procEnterPlayerCmd);
 
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {

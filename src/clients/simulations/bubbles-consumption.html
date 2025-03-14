@@ -34,15 +34,14 @@
         const EVT_PROBABILITY = 0.1;
         const POP_PROBABILITY = 0.1;
         const RADIUS_INCREASE_UNIT = 8;
-        const NO_TOKENS = 3;
+        const NO_PLAYERS = 1;
         const POP_ITERATION = 50;
         const POP_INTERVAL_MS = 1000;
         const Q_INTERVAL_MS = 1500;
         const USE_MOCKED_DATA = false;
 
         let globalBubbles = [];
-        let globalAccs = [];
-        let globalTournament = { tournament: { pk: null } };
+        let globalGameState = { tournament: { pk: null } };
         let globalPromiseQ = [];
         let globalInit = false;
         let globalQInit = false;
@@ -57,7 +56,7 @@
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: globalTournament.tournament,
+                        tournament: globalGameState.tournament,
                         source: larger.token.owners.at(-1),
                         dest: smaller.token.owners.at(-1),
                     }
@@ -77,24 +76,24 @@
             return new FnHandle(promiseId, promiseFactory);
         }
 
-        function buildNftTransfer(smaller, larger) {
+        function buildCollision(smaller, larger) {
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: globalTournament.tournament,
+                        tournament: globalGameState.tournament,
                         source: smaller.token.owners.at(-1),
                         dest: larger.token.owners.at(-1),
                         mint: smaller.token.mint,
                     }
                 }
             };
-            console.log('buildNftTransfer()', 'payload', payload);
+            console.log('buildCollision()', 'payload', payload);
 
             const promiseId = newId();
 
-            const promiseFactory = () => client.transferNft(payload, USE_MOCKED_DATA)
+            const promiseFactory = () => client.collision(payload, USE_MOCKED_DATA)
                 .then(data => {
-                    console.log('buildNftTransfer()', 'promiseFactory', 'data', data);
+                    console.log('buildCollision()', 'promiseFactory', 'data', data);
                     handlePromiseResolved(promiseId);
                 })
                 .catch(error => console.error('API call failed:', error));
@@ -102,23 +101,24 @@
             return new FnHandle(promiseId, promiseFactory);
         }
 
-        function buildNftBurn(bubble) {
+        function buildPop(bubble) {
             const payload = {
                 cmdData: {
                     instr: {
-                        tournament: globalTournament.tournament,
+                        tournament: globalGameState.tournament,
+                        dest: globalGameState.tournament,
                         source: bubble.token.owners.at(-1),
                         mint: bubble.token.mint,
                     }
                 }
             };
-            console.log('buildNftBurn()', 'payload', payload);
+            console.log('buildPop()', 'payload', payload);
 
             const promiseId = newId();
 
-            const promiseFactory = () => client.burnNft(payload, USE_MOCKED_DATA)
+            const promiseFactory = () => client.pop(payload, USE_MOCKED_DATA)
                 .then(data => {
-                    console.log('buildNftBurn()', 'promiseFactory', 'data', data);
+                    console.log('buildPop()', 'promiseFactory', 'data', data);
                     handlePromiseResolved(promiseId);
                 })
                 .catch(error => console.error('API call failed:', error));
@@ -131,18 +131,15 @@
                 return;
             }
 
-            const solT = buildSolTransfer(smaller, larger);
-            globalPromiseQ.push(solT);
-
-            const nftT = buildNftTransfer(smaller, larger);
-            globalPromiseQ.push(nftT);
+            const evt = buildCollision(smaller, larger);
+            globalPromiseQ.push(evt);
         }
 
-        function handleBurn(bubble) {
+        function handlePop(bubble) {
             if (USE_MOCKED_DATA) {
                 return;
             }
-            const t = buildNftBurn(bubble);
+            const t = buildPop(bubble);
             globalPromiseQ.push(t);
         }
 
@@ -251,7 +248,7 @@
             if (popped.length) {
                 globalBubbles = globalBubbles.filter(bubble => bubble.popIteration < POP_ITERATION);
                 for (const b of globalBubbles) {
-                    handleBurn(b);
+                    handlePop(b);
                 }
                 globalPop = false;
             }
@@ -259,39 +256,25 @@
             requestAnimationFrame(animate);
         }
 
-        async function setupTournament() {
+        async function setup() {
             const payload = {
                 cmdData: {
                     instr: {
                         name: 't1',
-                        noTokens: NO_TOKENS,
+                        noPlayers: NO_PLAYERS,
                         useExisting: true,
-                        fundAcc: false,
+                        fundAccs: true,
                     }
                 }
             };
-            const tournament = await client.setupTournament(payload, USE_MOCKED_DATA);
-            console.log('setupTournament', 'tournament', tournament);
-            globalTournament = tournament;
-        }
-
-        async function createAccs() {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        noAccs: NO_TOKENS,
-                        useExisting: true,
-                        fundAccs: false,
-                    }
-                }
-            };
-            const accs = await client.createAccs(payload, USE_MOCKED_DATA);
-            console.log('createAccs', 'accs', accs);
-            globalAccs = accs;
+            const resp = await client.setup(payload, USE_MOCKED_DATA);
+            console.log('setup', 'resp', resp);
+            globalGameState = resp;
         }
 
         function initBubblesData(tokens) {
             for (let i = 0; i < tokens.length; i++) {
+                tokens[i].indx = i;
                 let radius = Math.random() * 30 + 10;
                 let x = Math.random() * (canvas.width - radius * 2) + radius;
                 let y = Math.random() * (canvas.height - radius * 2) + radius;
@@ -300,40 +283,26 @@
             }
         }
 
-        async function initBubbles() {
+        async function initPlayer(acc, token) {
             const payload = {
                 cmdData: {
                     instr: {
-                        prefix: 'bc-5',
-                        noTokens: NO_TOKENS,
-                    }
-                }
-            };
-            const tokens = await client.mintNfts(payload, USE_MOCKED_DATA);
-            initBubblesData(tokens);
-        }
-
-        async function initLink(acc, token) {
-            const payload = {
-                cmdData: {
-                    instr: {
-                        mint: token.mint,
-                        tournament: globalTournament.tournament,
-                        source: globalTournament.tournament,
+                        tournament: globalGameState.tournament,
                         dest: acc,
+                        mint: token.mint,
                     }
                 }
             };
-            console.log('initLink()', 'payload', payload);
-            await client.transferNft(payload, USE_MOCKED_DATA);
+            console.log('initPlayers()', 'payload', payload);
+            await client.enterPlayer(payload, USE_MOCKED_DATA);
 
             const bubble = globalBubbles.filter(b => b.token.indx === token.indx)[0];
             bubble.color = getRandomColor();
             bubble.token.owners = [acc];
         }
 
-        async function initLinks() {
-            await Promise.all(globalBubbles.map((b, i) => initLink(globalAccs[i], b.token)));
+        async function initPlayers() {
+            await Promise.all(globalBubbles.map((b, i) => initPlayer(globalGameState.accs[i], b.token)));
         }
 
         function initPopInterval() {
@@ -376,12 +345,11 @@
         }
 
         async function init() {
-            await setupTournament();
-            await createAccs();
-            await initBubbles();
+            await setup();
+            initBubblesData(globalGameState.tokens);
             animate();
             await sleep(10_000);
-            await initLinks();
+            await initPlayers();
             globalInit = true;
             initPopInterval();
             initQInterval();

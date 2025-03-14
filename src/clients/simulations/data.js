@@ -1,20 +1,16 @@
-const API_HOST_URL = 'http://localhost:3001';
-const SETUP_URL = `${API_HOST_URL}/sol/cmd/setup`;
-const CREATE_ACCS_URL = `${API_HOST_URL}/sol/cmd/create-accs`;
-const TRANSFER_SOL_URL = `${API_HOST_URL}/sol/cmd/transfer-sol`;
-const TRANSFER_NFT_URL = `${API_HOST_URL}/sol/cmd/transfer-nft`;
-const BURN_NFT_URL = `${API_HOST_URL}/sol/cmd/burn-nft`;
-const MINT_NFTS_URL = `${API_HOST_URL}/sol/cmd/mint-nfts`;
+const API_HOST_URL = 'http://localhost:3002';
+const SETUP_URL = `${API_HOST_URL}/sim/cmd/setup`;
+const ENTER_PLAYER_URL = `${API_HOST_URL}/sim/cmd/enter-player`;
+const COLLISION_URL = `${API_HOST_URL}/sim/cmd/collision`;
+const POP_URL = `${API_HOST_URL}/sim/cmd/pop`;
 
 const wrapInPromise = (data) => new Promise((resolve) => resolve(data));
 
 class SolProxyClient {
-  setupTournament = async (payload, mock = false) => mock ? wrapInPromise(SETUP_RESP) : await callApi(SETUP_URL, payload);
-  createAccs = async (payload, mock = false) => mock ? wrapInPromise(CREATE_ACCS_URL) : await callApi(CREATE_ACCS_URL, payload);
-  transferSol = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(TRANSFER_SOL_URL, payload);
-  transferNft = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(TRANSFER_NFT_URL, payload);
-  burnNft = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(BURN_NFT_URL, payload);
-  mintNfts = async (payload, mock = false) => mock ? wrapInPromise([]) : await callApi(MINT_NFTS_URL, payload);
+  setup = async (payload, mock = false) => mock ? wrapInPromise(SETUP_RESP) : await callApi(SETUP_URL, payload);
+  collision = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(COLLISION_URL, payload);
+  pop = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(POP_URL, payload);
+  enterPlayer = async (payload, mock = false) => mock ? wrapInPromise({}) : await callApi(ENTER_PLAYER_URL, payload);
 }
 
 async function callApi(url, body = null, method = 'POST', headers = {}) {

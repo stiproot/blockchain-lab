@@ -21,8 +21,7 @@ export interface IInstr {
 }
 
 export interface IToken {
-  indx: number;
-  owner?: IKeys;
+  owner: IKeys;
   mint: IKeys;
 }
 

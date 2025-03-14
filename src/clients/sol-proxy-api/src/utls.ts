@@ -41,13 +41,27 @@ export async function createKeypairFromFile(filePath: string): Promise<Web3Keypa
 }
 
 export function buildCfgPath(fileName: string): string {
+    console.log('buildCfgPath()', 'SOLNET', process.env.SOLNET);
     const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
     return path.join(path.resolve('.', cfgDir), fileName);
+}
+
+export function buildTokenBasePath(): string {
+    console.log('buildTokenBasePath()', 'SOLNET', process.env.SOLNET);
+    const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
+    return path.resolve('.', cfgDir, '.tokens');
+}
+
+export function buildTokenPath(fileName: string): string {
+    console.log('buildTokenPath()', 'SOLNET', process.env.SOLNET);
+    const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
+    return path.join(buildTokenBasePath(), fileName);
 }
 
 export const buildTestWalletCfgName = (indx: number): string => `wallet${indx}-keypair.json`;
 
 export const loadKeypairFromCfg = async (fileName: string): Promise<Web3Keypair> => await createKeypairFromFile(buildCfgPath(fileName));
+export const loadKeypairFromToken = async (fileName: string): Promise<Web3Keypair> => await createKeypairFromFile(buildTokenPath(fileName));
 
 export async function loadDefaultWalletKeypair(): Promise<Web3Keypair> {
     let kpPath = null;
@@ -100,4 +114,11 @@ export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => co
 export async function buildTestWalletUmiKeypair(umi: Umi, indx: number): Promise<UmiKeypair> {
     const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
     return createUmiKeypairFromSecretKey(umi, kp.secretKey);
+}
+
+export function saveKeypairToFile(secretKey: Uint8Array) {
+    const filePath = path.join(buildTokenBasePath(), `${crypto.randomUUID()}.json`);
+    const secretKeyStr = JSON.stringify(Array.from(secretKey));
+    fs.writeFileSync(filePath, secretKeyStr, { encoding: "utf-8" });
+    console.log(`Keypair saved to ${filePath}`);
 }

@@ -6,12 +6,14 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, uint8ArrayToStr, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
-import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr } from './types';
+import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd, IInstr } from './types';
 import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 import { SolProxyClient } from './sol-proxy-client';
 
 const solProxyClient = new SolProxyClient();
+
+const buildCmd = (payload: any): ICmd => ({ cmdData: { instr: payload } } as ICmd);
 
 export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const umi = buildUmi();
@@ -23,13 +25,16 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   umi.use(keypairIdentity(tournamentSigner));
 
   console.log("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58());
+  console.log("setup()", 'tournament.pubkey', tournamentUmiKeypair.publicKey.toString());
 
   const accs = await createAccs(instr.noPlayers, instr.useExisting, instr.fundAccs);
+  console.log('setup()', 'accs', accs);
   const tokens = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
+  console.log('setup()', 'tokens', tokens);
 
   const resp = {
     tournament: {
-      pk: uint8ArrayToStr(tournamentUmiKeypair.secretKey)
+      pk: tournamentUmiKeypair.publicKey.toString()
     } as IKeys,
     accs: accs,
     tokens: tokens,
@@ -45,7 +50,7 @@ export async function collision(instr: ICollisionInstr): Promise<any> {
     dest: instr.dest,
     amt: DEFAULT_SOL_FUND_AMT
   };
-  await solProxyClient.transferSol(transferSolPayload);
+  await solProxyClient.transferSol(buildCmd(transferSolPayload));
 
   const transferTokenPayload = {
     payer: instr.tournament,
@@ -53,7 +58,7 @@ export async function collision(instr: ICollisionInstr): Promise<any> {
     dest: instr.dest,
     mint: instr.mint
   };
-  await solProxyClient.transferToken(transferTokenPayload);
+  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
 
   return {};
 }
@@ -65,15 +70,27 @@ export async function pop(instr: IPopInstr): Promise<any> {
     dest: instr.dest,
     mint: instr.mint
   };
-  await solProxyClient.transferToken(transferTokenPayload);
+
+  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
 
   const burnTokenPayload = {
     payer: instr.tournament,
     owner: instr.tournament,
     mint: null
   };
-  const burnToken = await solProxyClient.burnToken(burnTokenPayload);
+  await solProxyClient.burnToken(buildCmd(burnTokenPayload));
 
+  return {};
+}
+
+export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
+  const transferTokenPayload = {
+    payer: instr.tournament,
+    source: instr.tournament,
+    dest: instr.dest,
+    mint: instr.mint
+  };
+  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
   return {};
 }
 
@@ -97,7 +114,7 @@ async function createAccs(
     await Promise.all(accs.map(a => airdropSol(a.publicKey.toString())));
   }
 
-  return accs.map(a => ({ pk: uint8ArrayToStr(a.secretKey) } as IKeys));
+  return accs.map(a => ({ pk: a.publicKey.toString() } as IKeys));
 }
 
 async function createTokens(
@@ -106,15 +123,15 @@ async function createTokens(
   prefix: string,
 ): Promise<Array<IToken>> {
   const tokenIndxs = range(0, noTokens);
-  const mintTokenPromises: Array<Promise<any>> = tokenIndxs.map(ti => solProxyClient.mintToken(
-    {
-      name: buildTokenName(prefix, ti),
-      uri: buildTokenUri(prefix, ti),
-      owner: owner
-    }
-  ));
-  const tokenPubKeys = await Promise.all(mintTokenPromises);
-  return tokenPubKeys.map(t => ({ pk: t } as any as IToken));
+
+  const instrs = tokenIndxs.map(i => ({
+    payer: { pk: owner },
+    owner: { pk: owner },
+    name: buildTokenName(prefix, i),
+    uri: buildTokenUri(prefix, i),
+  }))
+
+  return await solProxyClient.mintTokens(buildCmd({ instrs: instrs }));
 }
 
 async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {
