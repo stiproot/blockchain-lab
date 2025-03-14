@@ -41,20 +41,16 @@ export async function createKeypairFromFile(filePath: string): Promise<Web3Keypa
 }
 
 export function buildCfgPath(fileName: string): string {
-    console.log('buildCfgPath()', 'SOLNET', process.env.SOLNET);
     const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
     return path.join(path.resolve('.', cfgDir), fileName);
 }
 
 export function buildTokenBasePath(): string {
-    console.log('buildTokenBasePath()', 'SOLNET', process.env.SOLNET);
     const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
     return path.resolve('.', cfgDir, '.tokens');
 }
 
 export function buildTokenPath(fileName: string): string {
-    console.log('buildTokenPath()', 'SOLNET', process.env.SOLNET);
-    const cfgDir = process.env.SOLNET === 'localnet' ? '.cfg.localnet' : '.cfg.devnet';
     return path.join(buildTokenBasePath(), fileName);
 }
 
