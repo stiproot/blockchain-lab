@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-// declare_id!("YourProgramIdHere"); // Replace with your program ID
+declare_id!("11111111111111111111111111111111");
 
 #[program]
 pub mod nft_game {

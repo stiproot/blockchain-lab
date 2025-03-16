@@ -1,3 +1,5 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "game"
 version = "0.1.0"
@@ -6,3 +8,4 @@ edition = "2024"
 [dependencies]
 anchor-lang = "0.31.0"
 anchor-spl = "0.31.0"
+solana-program = "2.2.1"
