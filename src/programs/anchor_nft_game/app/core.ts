@@ -1,13 +1,25 @@
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey, Signer } from "@solana/web3.js";
+import { Keypair, PublicKey, Signer, SystemProgram } from "@solana/web3.js";
 import { NftGame } from "../target/types/nft_game";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const program = anchor.workspace.NftGame as anchor.Program<NftGame>;
 
-export async function init() {
-    await program.methods.initializeGameState().rpc();
+
+export async function initGameState(
+    gameStateKeypair: Keypair,
+    walletSigner: Signer
+) {
+    await program.methods
+        .initializeGameState()
+        .accounts({
+            gameState: gameStateKeypair.publicKey,
+            payer: walletSigner.publicKey,
+            systemProgram: SystemProgram.programId,
+        })
+        .signers([walletSigner])
+        .rpc();
 }
 
 export async function sellNft(
@@ -29,7 +41,7 @@ export async function sellNft(
             gameState: gameState,
             signer: provider.wallet.publicKey,
         })
-        // .signers([])
+        .signers([walletSigner])
         .rpc();
 
     console.log(`NFT ${nftId} sold to ${newOwner.toBase58()}`);
@@ -43,7 +55,9 @@ export async function burnNft(nftId: string) {
     //     },
     // });
 
-    await program.methods.burnNft(nftId).rpc();
+    await program.methods
+        .burnNft(nftId)
+        .rpc();
 
     console.log(`NFT ${nftId} burned`);
 }

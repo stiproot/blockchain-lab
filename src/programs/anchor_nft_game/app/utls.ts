@@ -113,8 +113,11 @@ export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => co
 //     return createUmiKeypairFromSecretKey(umi, kp.secretKey);
 // }
 
-export function saveKeypairToFile(secretKey: Uint8Array) {
-    const filePath = path.join(buildTokenBasePath(), `${crypto.randomUUID()}.json`);
+export function writeKeypairToFile(
+    secretKey: Uint8Array,
+    fileName: string | null = null
+) {
+    const filePath = path.join(buildTokenBasePath(), `${fileName || crypto.randomUUID()}.json`);
     const secretKeyStr = JSON.stringify(Array.from(secretKey));
     fs.writeFileSync(filePath, secretKeyStr, { encoding: "utf-8" });
     console.log(`Keypair saved to ${filePath}`);

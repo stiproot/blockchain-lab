@@ -1,22 +1,22 @@
 import { Keypair, PublicKey, Signer } from "@solana/web3.js";
-import { sellNft } from "./core";
-import { buildCfgPath, loadKeypairFromCfg } from "./utls";
+import { initGameState, sellNft } from "./core";
+import { buildCfgPath, loadKeypairFromCfg, writeKeypairToFile } from "./utls";
 import { DEFAULT_TOURNAMENT_CFG } from "./consts";
 
 require("dotenv").config();
 
-const gameStateKeypair = Keypair.generate();
+async function init() {
+    const gameStateKeypair = Keypair.generate();
 
-async function main() {
-    const nftId = process.env.NFT_ID!;
-    const newOwner = new PublicKey(process.env.NEW_OWNER_ID);
+    writeKeypairToFile(gameStateKeypair.secretKey, 'gamestate');
+
     const walletKp: Keypair = await loadKeypairFromCfg(buildCfgPath(DEFAULT_TOURNAMENT_CFG));
     const walletSigner: Signer = Keypair.fromSecretKey(walletKp.secretKey);
 
-    await sellNft(nftId, newOwner, gameStateKeypair.publicKey, walletSigner);
+    await initGameState(gameStateKeypair, walletSigner);
 }
 
-main().then(() => {
+init().then(() => {
     console.log("Done.");
 }, err => {
     console.error(err);
