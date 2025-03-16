@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js';
 import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
 import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd } from './types';
-import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
+import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_BUY_IN_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 
 import { SolProxyClient } from './sol-proxy-client';
 
@@ -38,6 +38,25 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   } as ISetupResp;
 
   return resp;
+}
+
+export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
+  const transferSolPayload = {
+    payer: instr.dest,
+    source: instr.dest,
+    dest: instr.tournament,
+    amt: DEFAULT_TOURNAMENT_BUY_IN_AMT,
+  };
+  await solProxyClient.transferSol(buildCmd(transferSolPayload));
+
+  const transferTokenPayload = {
+    payer: instr.tournament,
+    source: instr.tournament,
+    dest: instr.dest,
+    mint: instr.mint
+  };
+  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
+  return {};
 }
 
 export async function collision(instr: ICollisionInstr): Promise<any> {
@@ -77,17 +96,6 @@ export async function pop(instr: IPopInstr): Promise<any> {
   };
   await solProxyClient.burnToken(buildCmd(burnTokenPayload));
 
-  return {};
-}
-
-export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
-  const transferTokenPayload = {
-    payer: instr.tournament,
-    source: instr.tournament,
-    dest: instr.dest,
-    mint: instr.mint
-  };
-  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
   return {};
 }
 
