@@ -6,10 +6,20 @@ declare_id!("E5KmCBmKp9v7LBz45V6ZhqCj6NFK7qh67qccHSfL6dQa");
 pub mod nft_game {
     use super::*;
 
+    pub fn initialize_game_state(ctx: Context<InitializeGameState>) -> Result<()> {
+        let game_state = &mut ctx.accounts.game_state;
+        game_state.nft_mappings = Vec::new(); // Initialize empty mapping
+        Ok(())
+    }
+
     pub fn sell_nft(ctx: Context<SellNft>, nft_id: String, new_owner: Pubkey) -> Result<()> {
         let game_state = &mut ctx.accounts.game_state;
 
-        if let Some(nft_entry) = game_state.nft_mappings.iter_mut().find(|n| n.nft_id == nft_id) {
+        if let Some(nft_entry) = game_state
+            .nft_mappings
+            .iter_mut()
+            .find(|n| n.nft_id == nft_id)
+        {
             nft_entry.owner = new_owner;
         } else {
             return Err(ErrorCode::NftNotFound.into());
@@ -25,6 +35,15 @@ pub mod nft_game {
 
         Ok(())
     }
+}
+
+#[derive(Accounts)]
+pub struct InitializeGameState<'info> {
+    #[account(init, payer = payer, space = 8 + 1000)]
+    pub game_state: Account<'info, GameState>, // Game state account created here
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]

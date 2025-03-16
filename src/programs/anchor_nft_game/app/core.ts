@@ -6,6 +6,10 @@ const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const program = anchor.workspace.NftGame as anchor.Program<NftGame>;
 
+export async function init() {
+    await program.methods.initializeGameState().rpc();
+}
+
 export async function sellNft(
     nftId: string,
     newOwner: PublicKey,
