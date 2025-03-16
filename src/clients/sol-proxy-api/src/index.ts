@@ -3,6 +3,7 @@ import cors from "cors";
 import { procQry } from "./qrys";
 import { procTransferSolCmd, procTransferTokenCmd, procBurnTokenCmd, procMintTokenCmd, procMintTokensCmd, procCreateAccCmd } from "./cmds";
 import { Request, Response } from 'express';
+import { startListener } from "./listeners";
 
 require("dotenv").config();
 
@@ -29,5 +30,6 @@ app.get('/healthz', (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
+  startListener();
   console.log(`Server is running on port ${PORT}`);
 });

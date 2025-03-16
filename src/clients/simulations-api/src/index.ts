@@ -9,13 +9,13 @@ const BASE_URL = "/sim";
 const PORT = process.env.PORT || 3002;
 
 const app = express();
-app.use(cors());
+app.use(cors(), express.json());
 
 // CMDS...
-app.post(`${BASE_URL}/cmd/setup`, express.json(), procSetupCmd);
-app.post(`${BASE_URL}/cmd/collision`, express.json(), procCollisionCmd);
-app.post(`${BASE_URL}/cmd/pop`, express.json(), procPopCmd);
-app.post(`${BASE_URL}/cmd/enter-player`, express.json(), procEnterPlayerCmd);
+app.post(`${BASE_URL}/cmd/setup`, procSetupCmd);
+app.post(`${BASE_URL}/cmd/collision`, procCollisionCmd);
+app.post(`${BASE_URL}/cmd/pop`, procPopCmd);
+app.post(`${BASE_URL}/cmd/enter-player`, procEnterPlayerCmd);
 
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {
