@@ -2,23 +2,28 @@ import * as anchor from "@coral-xyz/anchor";
 import { Keypair, PublicKey, Signer, SystemProgram } from "@solana/web3.js";
 import { NftGame } from "../target/types/nft_game";
 
+require("dotenv").config();
+
+process.env.ACHOR_PROVIDER_URL = 'http://localhost:8899';
+process.env.ANCHOR_WALLET = '.cfg.localnet/tournament-keypair.json';
+
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const program = anchor.workspace.NftGame as anchor.Program<NftGame>;
 
 
 export async function initGameState(
-    gameStateKeypair: Keypair,
+    gameStateSigner: Signer,
     walletSigner: Signer
 ) {
     await program.methods
         .initializeGameState()
         .accounts({
-            gameState: gameStateKeypair.publicKey,
+            gameState: gameStateSigner.publicKey,
             payer: walletSigner.publicKey,
-            systemProgram: SystemProgram.programId,
+            // systemProgram: SystemProgram.programId,
         })
-        .signers([walletSigner])
+        .signers([walletSigner, gameStateSigner])
         .rpc();
 }
 

@@ -5,15 +5,19 @@ import { DEFAULT_TOURNAMENT_CFG } from "./consts";
 
 require("dotenv").config();
 
+const gameStateKeypairCfg = 'gamestate-keypair.json';
+
 async function init() {
-    const gameStateKeypair = Keypair.generate();
-
-    writeKeypairToFile(gameStateKeypair.secretKey, 'gamestate');
-
-    const walletKp: Keypair = await loadKeypairFromCfg(buildCfgPath(DEFAULT_TOURNAMENT_CFG));
+    const walletKp: Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
     const walletSigner: Signer = Keypair.fromSecretKey(walletKp.secretKey);
 
-    await initGameState(gameStateKeypair, walletSigner);
+    const gameStateKp = await loadKeypairFromCfg(gameStateKeypairCfg);
+    const gameStateSigner = Keypair.fromSecretKey(gameStateKp.secretKey);
+
+    // const gameStateKeypair = Keypair.generate();
+    // writeKeypairToFile(gameStateKeypair.secretKey, gameStateKeypairCfg);
+
+    await initGameState(gameStateSigner, walletSigner);
 }
 
 init().then(() => {
