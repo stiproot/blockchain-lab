@@ -6,9 +6,12 @@ declare_id!("E5KmCBmKp9v7LBz45V6ZhqCj6NFK7qh67qccHSfL6dQa");
 pub mod nft_game {
     use super::*;
 
-    pub fn initialize_game_state(ctx: Context<InitializeGameState>) -> Result<()> {
+    pub fn initialize_game_state(
+        ctx: Context<InitializeGameState>,
+        initial_nfts: Vec<NftMapping>,
+    ) -> Result<()> {
         let game_state = &mut ctx.accounts.game_state;
-        game_state.nft_mappings = Vec::new(); // Initialize empty mapping
+        game_state.nft_mappings = initial_nfts;
         Ok(())
     }
 
@@ -39,11 +42,18 @@ pub mod nft_game {
 
 #[derive(Accounts)]
 pub struct InitializeGameState<'info> {
-    #[account(init, payer = payer, space = 8 + 1000)]
-    pub game_state: Account<'info, GameState>, // Game state account created here
+    #[account(init, payer = payer, space = 8 + 4 + (32 + 32 + 8) * 10)]
+    pub game_state: Account<'info, GameState>,
     #[account(mut)]
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AddNftMappings<'info> {
+    #[account(mut)]
+    pub game_state: Account<'info, GameState>,
+    pub signer: Signer<'info>,
 }
 
 #[derive(Accounts)]

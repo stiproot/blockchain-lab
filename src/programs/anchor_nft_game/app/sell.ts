@@ -1,5 +1,5 @@
 import { Keypair, Signer } from "@solana/web3.js";
-import { initGameState } from "./core";
+import { sellNft } from "./core";
 import { loadKeypairFromCfg, loadKeypairFromToken } from "./utls";
 import { DEFAULT_TOURNAMENT_CFG } from "./consts";
 
@@ -12,23 +12,10 @@ async function init() {
     const walletSigner: Signer = Keypair.fromSecretKey(walletKp.secretKey);
 
     const gameStateKp = await loadKeypairFromCfg(GAMESTATE_CFG);
-    const gameStateSigner = Keypair.fromSecretKey(gameStateKp.secretKey);
-
+    const newOwnerKp = await loadKeypairFromCfg('wallet0-keypair.json');
     const mint1Kp = await loadKeypairFromToken('1e11ce88-7c27-4b6f-b5f0-e8e42ac52357.json');
-    const mint2Kp = await loadKeypairFromToken('8e7e8178-2539-43bc-a65a-2d726e8ed175.json');
 
-    const initialNfts = [
-        {
-            nftId: mint1Kp.publicKey.toBase58(),
-            owner: walletSigner.publicKey,
-        },
-        {
-            nftId: mint2Kp.publicKey.toBase58(),
-            owner: walletSigner.publicKey,
-        },
-    ];
-
-    await initGameState(gameStateSigner, walletSigner, initialNfts);
+    await sellNft(mint1Kp.publicKey.toBase58(), newOwnerKp.publicKey, gameStateKp.publicKey, walletSigner);
 }
 
 init().then(() => {

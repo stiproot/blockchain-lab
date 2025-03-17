@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Keypair, PublicKey, Signer, SystemProgram } from "@solana/web3.js";
+import { PublicKey, Signer } from "@solana/web3.js";
 import { NftGame } from "../target/types/nft_game";
 
 require("dotenv").config();
@@ -14,10 +14,11 @@ const program = anchor.workspace.NftGame as anchor.Program<NftGame>;
 
 export async function initGameState(
     gameStateSigner: Signer,
-    walletSigner: Signer
+    walletSigner: Signer,
+    nfts: Array<any>
 ) {
     await program.methods
-        .initializeGameState()
+        .initializeGameState(nfts)
         .accounts({
             gameState: gameStateSigner.publicKey,
             payer: walletSigner.publicKey,
