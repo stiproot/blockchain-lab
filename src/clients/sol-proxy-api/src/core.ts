@@ -142,7 +142,7 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   const acc = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
 
   writeKeypairToFile(acc.secretKey);
-  keyStore.loadTokens();
+  await keyStore.loadTokens();
 
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
@@ -168,7 +168,7 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
   );
 
   writeKeypairToFile(token.secretKey);
-  keyStore.loadTokens();
+  await keyStore.loadTokens();
 
   const resp = {
     mint: { pk: token.publicKey.toString() } as IKeys,

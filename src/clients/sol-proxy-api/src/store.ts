@@ -17,7 +17,7 @@ export interface IKeypairHandle {
 
 export interface IKeyStore {
   getKeypair(pubKey: IKeys, umi: Umi): IKeypairHandle;
-  loadTokens(): void;
+  loadTokens(): Promise<void>;
 }
 
 export class KeyStore implements IKeyStore {
@@ -57,6 +57,7 @@ export class KeyStore implements IKeyStore {
       const keypair = await loadKeypairFromToken(cfg);
       this._memoryStore[keypair.publicKey.toBase58()] = keypair;
     }
+    console.log('loadTokens()', 'key store', this._memoryStore);
   }
 
   getKeypair(pubKey: IKeys, umi: Umi): IKeypairHandle {
