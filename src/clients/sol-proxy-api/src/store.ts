@@ -6,8 +6,30 @@ import { DEFAULT_NO_KEYS_IN_KEYSTORE, DEFAULT_TOURNAMENT_CFG } from './consts';
 import { createSignerFromKeypair, KeypairSigner, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
 import { IKeys } from './types';
 import { fs } from 'mz';
+import { ISubscriber } from './listeners';
 
 require("dotenv").config();
+
+export interface ISubStore {
+  getSub(key: string): ISubscriber;
+  addSub(key: string, sub: ISubscriber): void;
+}
+
+export class SubStore implements ISubStore {
+  private readonly _memoryStore: any = {};
+
+  getSub(key: string): ISubscriber {
+    return this._memoryStore[key];
+  }
+
+  addSub(key: string, sub: ISubscriber): void {
+    this._memoryStore[key] = sub;
+  }
+
+  removeSub(key: string): void {
+    delete this._memoryStore[key];
+  }
+}
 
 export interface IKeypairHandle {
   w3Kp: Web3Keypair;

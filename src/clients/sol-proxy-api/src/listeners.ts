@@ -1,52 +1,66 @@
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { createConn } from "./utls";
+import { ISubscribeEvt } from "./types";
 
 require("dotenv").config();
 
-const WATCHED_WALLET = new PublicKey(process.env.WALLET_ADDRESS!);
-const connection = createConn();
-let subscriptionId: number | null = null;
+export interface ISubscriber {
+  key: string;
+  subscriptionId: number | null;
+  start(): ISubscriber;
+  stop(): void;
+}
 
-export const startListener = () => {
-  if (subscriptionId !== null) {
-    return; // Prevent duplicate listeners
+export class Subscriber implements ISubscriber {
+  private readonly _account: PublicKey;
+  private readonly _connection: Connection;
+  private readonly _fn: CallableFunction;
+
+  public key: string;
+  public subscriptionId: number | null = null;
+
+  constructor(
+    key: string,
+    account: string,
+    fn: CallableFunction,
+    connection: Connection | null = null
+  ) {
+    this.key = key;
+    this._account = new PublicKey(account);
+    this._fn = fn;
+    this._connection = connection || createConn();
   }
 
-  subscriptionId = connection.onAccountChange(WATCHED_WALLET, async (accountInfo) => {
-    console.log("📢 Wallet balance changed!", accountInfo);
+  start(): ISubscriber {
+    this.subscriptionId = this._connection.onAccountChange(this._account, async (accountInfo) => {
+      console.log('📢 Wallet balance changed!', 'accountInfo', accountInfo, 'data', accountInfo.data.toJSON());
 
-    // Fetch latest transaction to determine sender
-    // const transactions = await connection.getConfirmedSignaturesForAddress2(WATCHED_WALLET, { limit: 1 });
+      const signatures = await this._connection.getSignaturesForAddress(this._account, { limit: 1 });
+      if (!signatures.length) {
+        return console.log("No recent transactions found.");
+      }
 
-    // let asset = await fetchDigitalAssetWithAssociatedToken(umi, mintSigner.publicKey, walletUmiKp.publicKey);
-
-    // if (!transactions.length) {
-    //   return;
-    // }
-
-    // const txid = transactions[0].signature;
-    // const tx = await connection.getTransaction(txid, { commitment: "confirmed" });
-    // if (!tx || !tx.transaction) {
-    //   return;
-    // }
-
-    // const sender = tx.transaction.message.accountKeys[0].toBase58();
-    // const newBalance = accountInfo.lamports / 1e9; // Convert lamports to SOL
-
-    // console.log(`💰 SOL received from: ${sender}, New Balance: ${newBalance}`);
-
-    // // Send data to backend API
-    // // await notifyBackend({ txid, sender, newBalance });
-    // console.log('startListener', 'tx', tx);
-  });
-
-  console.log("✅ Solana account listener started.");
-};
-
-export const stopListener = () => {
-  if (subscriptionId !== null) {
-    connection.removeAccountChangeListener(subscriptionId);
-    subscriptionId = null;
-    console.log("🛑 Solana account listener stopped.");
+      const txid = signatures[0].signature;
+      const tx = await this._connection.getTransaction(txid, { commitment: "confirmed" });
+      if (tx && tx.transaction) {
+        const sender = tx.transaction.message.accountKeys[0].toBase58();
+        const amount = (tx.meta!.preBalances[0] - tx.meta!.postBalances[0]) / 1e9; // Convert lamports to SOL
+        console.log(`SOL received! Sender: ${sender}, Amount: ${amount} SOL, TxID: ${txid}`);
+        if (this._fn) {
+          await this._fn({
+            sender: sender,
+            amt: amount,
+            account: this._account.toBase58()
+          } as ISubscribeEvt);
+        }
+      }
+    });
+    return this;
   }
-};
+
+  stop(): void {
+    this._connection.removeAccountChangeListener(this.subscriptionId!);
+    this.subscriptionId = null;
+    console.log(`Solana account listener ${this.key} stopped.`);
+  }
+}

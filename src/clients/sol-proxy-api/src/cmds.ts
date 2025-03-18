@@ -1,6 +1,10 @@
 import { Response } from 'express';
-import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr } from './types';
+import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr } from './types';
 import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken } from './core';
+import { Subscriber } from './listeners';
+import { SubStore } from './store';
+
+const subStore = new SubStore();
 
 export const procTransferSolCmd = async (req: IReq<ITransferSolInstr>, res: Response) => {
   console.debug(`procTransferSolCmd START.`);
@@ -60,4 +64,20 @@ export const procCreateAccCmd = async (req: IReq<ICreateAccInstr>, res: Response
 
   console.debug(`procCreateAccCmd END.`);
   res.status(200).json(resp);
+};
+
+export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Response) => {
+  console.debug(`procCreateAccCmd START.`);
+  console.debug(`instr`, req.body);
+
+  const key = crypto.randomUUID();
+  const fn = async (evt: ISubscribeEvt) => {
+    console.log('sub-evt', evt);
+  };
+
+  const sub = new Subscriber(key, req.body.account, fn);
+  subStore.addSub(key, sub.start());
+
+  console.debug(`procCreateAccCmd END.`);
+  res.status(200).json({});
 };

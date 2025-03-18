@@ -1,9 +1,17 @@
 import express from "express";
 import cors from "cors";
 import { procQry } from "./qrys";
-import { procTransferSolCmd, procTransferTokenCmd, procBurnTokenCmd, procMintTokenCmd, procMintTokensCmd, procCreateAccCmd } from "./cmds";
+import {
+  procTransferSolCmd,
+  procTransferTokenCmd,
+  procBurnTokenCmd,
+  procMintTokenCmd,
+  procMintTokensCmd,
+  procCreateAccCmd,
+  procSubscribeAccCmd
+} from "./cmds";
 import { Request, Response } from 'express';
-import { startListener } from "./listeners";
+import { startListener } from "./global-listeners";
 
 require("dotenv").config();
 
@@ -20,6 +28,7 @@ app.post(`${BASE_URL}/cmd/burn-token`, procBurnTokenCmd);
 app.post(`${BASE_URL}/cmd/mint-token`, procMintTokenCmd);
 app.post(`${BASE_URL}/cmd/mint-tokens`, procMintTokensCmd);
 app.post(`${BASE_URL}/cmd/create-acc`, procCreateAccCmd);
+app.post(`${BASE_URL}/cmd/subscribe-acc`, procSubscribeAccCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);
@@ -30,6 +39,6 @@ app.get('/healthz', (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  startListener();
+  // startListener();
   console.log(`Server is running on port ${PORT}`);
 });

@@ -58,3 +58,13 @@ export interface ICreateAccInstr extends IInstr {
   useExisting: boolean;
   fundAcc: boolean;
 }
+
+export interface ISubscribeAccInstr extends IInstr {
+  account: string;
+}
+
+export interface ISubscribeEvt {
+  account: string;
+  sender: string;
+  amt: number;
+}
