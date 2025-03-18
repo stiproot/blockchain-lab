@@ -65,7 +65,6 @@ export const procCreateAccCmd = async (req: IReq<ICreateAccInstr>, res: Response
   res.status(200).json(resp);
 };
 
-
 const subStore = new SubStore();
 const httpClient = new HttpClient();
 
@@ -75,6 +74,7 @@ export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Re
 
   const fn = async (evt: ISubscribeEvt) => {
     console.log('sub-evt', evt);
+    evt.extId = req.body.extId;
     await httpClient.post(req.body.webhookUrl, evt);
   };
 

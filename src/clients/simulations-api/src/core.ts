@@ -30,6 +30,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   console.debug("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58(), 'accs', accs, 'tokens', tokens);
 
   await solProxyClient.subAccTransactions({
+    extId: instr.name,
     webhookUrl: `${process.env.SIM_API_HOST}/sim/web-hook/account-transactions`,
     account: tournamentWeb3Keypair.publicKey.toBase58()
   });

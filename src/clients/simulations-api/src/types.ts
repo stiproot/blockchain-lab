@@ -48,6 +48,7 @@ export interface IEnterPlayerInstr extends IInstr {
 }
 
 export interface ISubscribeEvt {
+  extId: string | null;
   account: string;
   sender: string;
   amt: number;

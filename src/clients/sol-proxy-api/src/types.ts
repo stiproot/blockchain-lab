@@ -60,6 +60,7 @@ export interface ICreateAccInstr extends IInstr {
 }
 
 export interface ISubscribeAccInstr extends IInstr {
+  extId: string;
   account: string;
   webhookUrl: string;
 }
@@ -69,6 +70,7 @@ export interface IUnsubscribeAccInstr extends IInstr {
 }
 
 export interface ISubscribeEvt {
+  extId: string | null;
   account: string;
   sender: string;
   amt: number;
