@@ -8,10 +8,10 @@ import {
   procMintTokenCmd,
   procMintTokensCmd,
   procCreateAccCmd,
-  procSubscribeAccCmd
+  procSubscribeAccCmd,
+  procUnsubscribeAccCmd
 } from "./cmds";
 import { Request, Response } from 'express';
-import { startListener } from "./global-listeners";
 
 require("dotenv").config();
 
@@ -28,7 +28,8 @@ app.post(`${BASE_URL}/cmd/burn-token`, procBurnTokenCmd);
 app.post(`${BASE_URL}/cmd/mint-token`, procMintTokenCmd);
 app.post(`${BASE_URL}/cmd/mint-tokens`, procMintTokensCmd);
 app.post(`${BASE_URL}/cmd/create-acc`, procCreateAccCmd);
-app.post(`${BASE_URL}/cmd/subscribe-acc`, procSubscribeAccCmd);
+app.post(`${BASE_URL}/cmd/subscribe/acc-transactions`, procSubscribeAccCmd);
+app.post(`${BASE_URL}/cmd/unsubscribe/acc-transactions`, procUnsubscribeAccCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);

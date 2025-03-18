@@ -11,15 +11,18 @@ import { ISubscriber } from './listeners';
 require("dotenv").config();
 
 export interface ISubStore {
-  getSub(key: string): ISubscriber;
+  getSub(key: string): ISubscriber | null;
   addSub(key: string, sub: ISubscriber): void;
 }
 
 export class SubStore implements ISubStore {
   private readonly _memoryStore: any = {};
 
-  getSub(key: string): ISubscriber {
-    return this._memoryStore[key];
+  getSub(key: string): ISubscriber | null {
+    if (key in this._memoryStore) {
+      return this._memoryStore[key];
+    }
+    return null;
   }
 
   addSub(key: string, sub: ISubscriber): void {

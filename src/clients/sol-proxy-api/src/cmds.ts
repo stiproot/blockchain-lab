@@ -1,10 +1,9 @@
 import { Response } from 'express';
-import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr } from './types';
+import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr, IUnsubscribeAccInstr } from './types';
 import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken } from './core';
 import { Subscriber } from './listeners';
 import { SubStore } from './store';
-
-const subStore = new SubStore();
+import { HttpClient } from './http-client';
 
 export const procTransferSolCmd = async (req: IReq<ITransferSolInstr>, res: Response) => {
   console.debug(`procTransferSolCmd START.`);
@@ -66,18 +65,33 @@ export const procCreateAccCmd = async (req: IReq<ICreateAccInstr>, res: Response
   res.status(200).json(resp);
 };
 
+
+const subStore = new SubStore();
+const httpClient = new HttpClient();
+
 export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Response) => {
-  console.debug(`procCreateAccCmd START.`);
+  console.debug(`procSubscribeAccCmd START.`);
   console.debug(`instr`, req.body);
 
-  const key = crypto.randomUUID();
   const fn = async (evt: ISubscribeEvt) => {
     console.log('sub-evt', evt);
+    await httpClient.post(req.body.webhookUrl, evt);
   };
 
-  const sub = new Subscriber(key, req.body.account, fn);
-  subStore.addSub(key, sub.start());
+  const sub = new Subscriber(req.body.account, fn);
+  subStore.addSub(req.body.account, sub.start());
 
-  console.debug(`procCreateAccCmd END.`);
+  console.debug(`procSubscribeAccCmd END.`);
+  res.status(200).json({});
+};
+
+export const procUnsubscribeAccCmd = async (req: IReq<IUnsubscribeAccInstr>, res: Response) => {
+  console.debug(`procUnsubscribeAccCmd START.`);
+  console.debug(`instr`, req.body);
+
+  subStore.getSub(req.body.account)?.stop();
+  subStore.removeSub(req.body.account);
+
+  console.debug(`procUnsubscribeAccCmd END.`);
   res.status(200).json({});
 };

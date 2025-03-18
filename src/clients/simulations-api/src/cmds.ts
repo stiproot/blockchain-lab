@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { IReq, ICmd, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr } from './types';
+import { IReq, ICmd, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ISubscribeEvt } from './types';
 import { collision, enterPlayer, pop, setup } from './core';
 
 export const procSetupCmd = async (req: IReq<ISetupInstr>, res: Response) => {
@@ -40,4 +40,12 @@ export const procEnterPlayerCmd = async (req: IReq<IEnterPlayerInstr>, res: Resp
 
   console.info(`procEnterPlayerCmd END.`);
   res.status(200).json(resp);
+};
+
+export const procAccTransactionsCmd = async (req: IReq<ISubscribeEvt>, res: Response) => {
+  console.info(`procAccTransactionsCmd START.`);
+  console.debug(`instr`, req.body);
+
+  console.info(`procAccTransactionsCmd END.`);
+  res.status(200).json({});
 };

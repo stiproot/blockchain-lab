@@ -11,6 +11,8 @@ import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_BUY_IN_AMT, DEFAULT_TOURNAMENT
 
 import { SolProxyClient } from './sol-proxy-client';
 
+require("dotenv").config();
+
 const solProxyClient = new SolProxyClient();
 
 export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
@@ -26,6 +28,11 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const tokens = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
 
   console.debug("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58(), 'accs', accs, 'tokens', tokens);
+
+  await solProxyClient.subAccTransactions({
+    webhookUrl: `${process.env.SIM_API_HOST}/sim/web-hook/account-transactions`,
+    account: tournamentWeb3Keypair.publicKey.toBase58()
+  });
 
   const resp = {
     tournament: {

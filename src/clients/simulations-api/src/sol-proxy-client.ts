@@ -7,6 +7,8 @@ const MINT_TOKENS_ROUTE = `sol/cmd/mint-tokens`;
 const TRANSFER_SOL_ROUTE = `sol/cmd/transfer-sol`;
 const TRANSFER_TOKEN_ROUTE = `sol/cmd/transfer-token`;
 const BURN_TOKEN_ROUTE = `sol/cmd/burn-token`;
+const SUB_ACC_TRANSACTIONS_ROUTE = `sol/cmd/subscribe/acc-transactions`;
+const UNSUB_ACC_TRANSACTIONS_ROUTE = `sol/cmd/unsubscribe/acc-transactions`;
 
 export class SolProxyClient {
   private readonly _baseUrl: string;
@@ -35,5 +37,13 @@ export class SolProxyClient {
 
   async burnToken(payload: any): Promise<any> {
     return await this._httpClient.post(BURN_TOKEN_ROUTE, payload);
+  }
+
+  async subAccTransactions(payload: any): Promise<any> {
+    return await this._httpClient.post(SUB_ACC_TRANSACTIONS_ROUTE, payload);
+  }
+
+  async unsubAccTransactions(payload: any): Promise<any> {
+    return await this._httpClient.post(UNSUB_ACC_TRANSACTIONS_ROUTE, payload);
   }
 }

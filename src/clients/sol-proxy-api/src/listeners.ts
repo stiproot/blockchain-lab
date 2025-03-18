@@ -5,7 +5,6 @@ import { ISubscribeEvt } from "./types";
 require("dotenv").config();
 
 export interface ISubscriber {
-  key: string;
   subscriptionId: number | null;
   start(): ISubscriber;
   stop(): void;
@@ -16,16 +15,13 @@ export class Subscriber implements ISubscriber {
   private readonly _connection: Connection;
   private readonly _fn: CallableFunction;
 
-  public key: string;
   public subscriptionId: number | null = null;
 
   constructor(
-    key: string,
     account: string,
     fn: CallableFunction,
     connection: Connection | null = null
   ) {
-    this.key = key;
     this._account = new PublicKey(account);
     this._fn = fn;
     this._connection = connection || createConn();
@@ -41,11 +37,13 @@ export class Subscriber implements ISubscriber {
       }
 
       const txid = signatures[0].signature;
-      const tx = await this._connection.getTransaction(txid, { commitment: "confirmed" });
+      const tx = await this._connection.getTransaction(txid, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
       if (tx && tx.transaction) {
-        const sender = tx.transaction.message.accountKeys[0].toBase58();
+        const sender = tx.transaction.message.staticAccountKeys[0].toBase58();
         const amount = (tx.meta!.preBalances[0] - tx.meta!.postBalances[0]) / 1e9; // Convert lamports to SOL
+
         console.log(`SOL received! Sender: ${sender}, Amount: ${amount} SOL, TxID: ${txid}`);
+
         if (this._fn) {
           await this._fn({
             sender: sender,
@@ -61,6 +59,6 @@ export class Subscriber implements ISubscriber {
   stop(): void {
     this._connection.removeAccountChangeListener(this.subscriptionId!);
     this.subscriptionId = null;
-    console.log(`Solana account listener ${this.key} stopped.`);
+    console.log(`Solana account listener ${this._account.toBase58()} stopped.`);
   }
 }

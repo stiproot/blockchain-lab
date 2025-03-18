@@ -47,6 +47,12 @@ export interface IEnterPlayerInstr extends IInstr {
   mint: IKeys;
 }
 
+export interface ISubscribeEvt {
+  account: string;
+  sender: string;
+  amt: number;
+}
+
 export interface IToken {
   owner: IKeys;
   mint: IKeys;
