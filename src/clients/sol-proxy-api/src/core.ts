@@ -10,7 +10,7 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, saveKeypairToFile } from './utls';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, writeKeypairToFile } from './utls';
 import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
 import { IKeyStore, KeyStore } from './store';
@@ -141,6 +141,9 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
   const acc = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
 
+  writeKeypairToFile(acc.secretKey);
+  keyStore.loadTokens();
+
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
     await airdropSol(acc.publicKey.toString());
@@ -164,7 +167,7 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
     ownerKps.umiKp.publicKey,
   );
 
-  saveKeypairToFile(token.secretKey);
+  writeKeypairToFile(token.secretKey);
   keyStore.loadTokens();
 
   const resp = {

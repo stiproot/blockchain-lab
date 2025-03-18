@@ -112,7 +112,7 @@ export async function buildTestWalletUmiKeypair(umi: Umi, indx: number): Promise
     return createUmiKeypairFromSecretKey(umi, kp.secretKey);
 }
 
-export function saveKeypairToFile(secretKey: Uint8Array) {
+export function writeKeypairToFile(secretKey: Uint8Array) {
     const filePath = path.join(buildTokenBasePath(), `${crypto.randomUUID()}.json`);
     const secretKeyStr = JSON.stringify(Array.from(secretKey));
     fs.writeFileSync(filePath, secretKeyStr, { encoding: "utf-8" });
