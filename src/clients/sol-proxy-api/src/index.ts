@@ -11,15 +11,15 @@ const BASE_URL = "/sol";
 const PORT = process.env.PORT || 3001;
 
 const app = express();
-app.use(cors());
+app.use(cors(), express.json());
 
 // CMDS...
-app.post(`${BASE_URL}/cmd/transfer-sol`, express.json(), procTransferSolCmd);
-app.post(`${BASE_URL}/cmd/transfer-token`, express.json(), procTransferTokenCmd);
-app.post(`${BASE_URL}/cmd/burn-token`, express.json(), procBurnTokenCmd);
-app.post(`${BASE_URL}/cmd/mint-token`, express.json(), procMintTokenCmd);
-app.post(`${BASE_URL}/cmd/mint-tokens`, express.json(), procMintTokensCmd);
-app.post(`${BASE_URL}/cmd/create-acc`, express.json(), procCreateAccCmd);
+app.post(`${BASE_URL}/cmd/transfer-sol`, procTransferSolCmd);
+app.post(`${BASE_URL}/cmd/transfer-token`, procTransferTokenCmd);
+app.post(`${BASE_URL}/cmd/burn-token`, procBurnTokenCmd);
+app.post(`${BASE_URL}/cmd/mint-token`, procMintTokenCmd);
+app.post(`${BASE_URL}/cmd/mint-tokens`, procMintTokensCmd);
+app.post(`${BASE_URL}/cmd/create-acc`, procCreateAccCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);

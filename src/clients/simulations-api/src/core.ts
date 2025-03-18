@@ -13,8 +13,6 @@ import { SolProxyClient } from './sol-proxy-client';
 
 const solProxyClient = new SolProxyClient();
 
-const buildCmd = (payload: any): ICmd => ({ cmdData: { instr: payload } } as ICmd);
-
 export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const umi = buildUmi();
 
@@ -47,7 +45,7 @@ export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
     dest: instr.tournament,
     amt: DEFAULT_TOURNAMENT_BUY_IN_AMT,
   };
-  await solProxyClient.transferSol(buildCmd(transferSolPayload));
+  await solProxyClient.transferSol(transferSolPayload);
 
   const transferTokenPayload = {
     payer: instr.tournament,
@@ -55,7 +53,7 @@ export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
     dest: instr.dest,
     mint: instr.mint
   };
-  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
+  await solProxyClient.transferToken(transferTokenPayload);
   return {};
 }
 
@@ -66,7 +64,7 @@ export async function collision(instr: ICollisionInstr): Promise<any> {
     dest: instr.dest,
     amt: DEFAULT_SOL_FUND_AMT
   };
-  await solProxyClient.transferSol(buildCmd(transferSolPayload));
+  await solProxyClient.transferSol(transferSolPayload);
 
   const transferTokenPayload = {
     payer: instr.tournament,
@@ -74,7 +72,7 @@ export async function collision(instr: ICollisionInstr): Promise<any> {
     dest: instr.dest,
     mint: instr.mint
   };
-  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
+  await solProxyClient.transferToken(transferTokenPayload);
 
   return {};
 }
@@ -87,14 +85,14 @@ export async function pop(instr: IPopInstr): Promise<any> {
     mint: instr.mint
   };
 
-  await solProxyClient.transferToken(buildCmd(transferTokenPayload));
+  await solProxyClient.transferToken(transferTokenPayload);
 
   const burnTokenPayload = {
     payer: instr.tournament,
     owner: instr.tournament,
     mint: instr.mint
   };
-  await solProxyClient.burnToken(buildCmd(burnTokenPayload));
+  await solProxyClient.burnToken(burnTokenPayload);
 
   return {};
 }
@@ -136,7 +134,7 @@ async function createTokens(
     uri: buildTokenUri(prefix, i),
   }))
 
-  return await solProxyClient.mintTokens(buildCmd({ instrs: instrs }));
+  return await solProxyClient.mintTokens({ instrs: instrs });
 }
 
 async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {

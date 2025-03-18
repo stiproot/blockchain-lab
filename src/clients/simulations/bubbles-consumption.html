@@ -54,13 +54,9 @@
 
         function buildSolTransfer(smaller, larger) {
             const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: globalGameState.tournament,
-                        source: larger.token.owners.at(-1),
-                        dest: smaller.token.owners.at(-1),
-                    }
-                }
+                tournament: globalGameState.tournament,
+                source: larger.token.owners.at(-1),
+                dest: smaller.token.owners.at(-1),
             };
             console.log('buildSolTransfer()', 'payload', payload);
 
@@ -78,14 +74,10 @@
 
         function buildCollision(smaller, larger) {
             const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: globalGameState.tournament,
-                        source: smaller.token.owners.at(-1),
-                        dest: larger.token.owners.at(-1),
-                        mint: smaller.token.mint,
-                    }
-                }
+                tournament: globalGameState.tournament,
+                source: smaller.token.owners.at(-1),
+                dest: larger.token.owners.at(-1),
+                mint: smaller.token.mint,
             };
             console.log('buildCollision()', 'payload', payload);
 
@@ -103,14 +95,10 @@
 
         function buildPop(bubble) {
             const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: globalGameState.tournament,
-                        dest: globalGameState.tournament,
-                        source: bubble.token.owners.at(-1),
-                        mint: bubble.token.mint,
-                    }
-                }
+                tournament: globalGameState.tournament,
+                dest: globalGameState.tournament,
+                source: bubble.token.owners.at(-1),
+                mint: bubble.token.mint,
             };
             console.log('buildPop()', 'payload', payload);
 
@@ -258,14 +246,10 @@
 
         async function setup() {
             const payload = {
-                cmdData: {
-                    instr: {
-                        name: 't1',
-                        noPlayers: NO_PLAYERS,
-                        useExisting: true,
-                        fundAccs: false,
-                    }
-                }
+                name: 't1',
+                noPlayers: NO_PLAYERS,
+                useExisting: true,
+                fundAccs: true,
             };
             const resp = await client.setup(payload, USE_MOCKED_DATA);
             console.log('setup', 'resp', resp);
@@ -285,13 +269,9 @@
 
         async function initPlayer(acc, token) {
             const payload = {
-                cmdData: {
-                    instr: {
-                        tournament: globalGameState.tournament,
-                        dest: acc,
-                        mint: token.mint,
-                    }
-                }
+                tournament: globalGameState.tournament,
+                dest: acc,
+                mint: token.mint,
             };
             console.log('initPlayers()', 'payload', payload);
             await client.enterPlayer(payload, USE_MOCKED_DATA);
