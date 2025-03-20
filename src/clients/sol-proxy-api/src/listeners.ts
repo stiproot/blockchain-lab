@@ -40,7 +40,8 @@ export class Subscriber implements ISubscriber {
       const tx = await this._connection.getTransaction(txid, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
       if (tx && tx.transaction) {
         const sender = tx.transaction.message.staticAccountKeys[0].toBase58();
-        const amount = (tx.meta!.preBalances[0] - tx.meta!.postBalances[0]) / 1e9; // Convert lamports to SOL
+        // const amount = (tx.meta!.preBalances[0] - tx.meta!.postBalances[0]) / 1e9; // Convert lamports to SOL
+        const amount: number = tx.meta!.preBalances[0] - tx.meta!.postBalances[0];
 
         console.log(`SOL received! Sender: ${sender}, Amount: ${amount} SOL, TxID: ${txid}`);
 

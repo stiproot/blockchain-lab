@@ -73,8 +73,8 @@ export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Re
   console.debug(`instr`, req.body);
 
   const fn = async (evt: ISubscribeEvt) => {
-    console.log('sub-evt', evt);
     evt.extId = req.body.extId;
+    console.log('sub-evt', evt);
     await httpClient.post(req.body.webhookUrl, evt);
   };
 
