@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "calc": "ts-node src/calc.ts",
+    "memo": "ts-node src/memo.ts",
     "create-account": "ts-node src/create-account.ts",
     "create-mint": "ts-node src/create-mint.ts",
     "create-nft": "ts-node src/create-nft.ts",
