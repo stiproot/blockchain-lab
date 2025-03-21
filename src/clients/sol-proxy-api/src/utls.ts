@@ -14,7 +14,7 @@ import path from 'path';
 import yaml from 'yaml';
 import bs58 from 'bs58';
 import { IKeys } from './types';
-import { DEFAULT_NFT_URL, DEFAULT_TOURNAMENT_CFG } from './consts';
+import { DEFAULT_NFT_URL, DEFAULT_TOURNAMENT_CFG, MEMO_PROGRAM_ID } from './consts';
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
     os.homedir(),
@@ -105,7 +105,8 @@ export const range = (start: number, stop: number, step = 1) =>
 export const buildTokenName = (name: string, tNo: number): string => `${name}:token-${tNo}`;
 export const buildTokenUri = (name: string, tNo: number): string => `${DEFAULT_NFT_URL}?tournament=${name}&token-${tNo}`;
 
-export const logTransactionLink = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=${process.env.SOLNET}`);
+export const logTransactionLinkFromDecoded = (prefix: string, decodedSig: Uint8Array) => console.log(prefix, `https://explorer.solana.com/tx/${bs58.encode(decodedSig)}?cluster=${process.env.SOLNET}`);
+export const logTransactionLink = (prefix: string, sig: string) => console.log(prefix, `https://explorer.solana.com/tx/${sig}?cluster=${process.env.SOLNET}`);
 
 export async function buildTestWalletUmiKeypair(umi: Umi, indx: number): Promise<UmiKeypair> {
     const kp: Web3Keypair = await loadKeypairFromCfg(buildTestWalletCfgName(indx));
@@ -118,3 +119,5 @@ export function writeKeypairToFile(secretKey: Uint8Array) {
     fs.writeFileSync(filePath, secretKeyStr, { encoding: "utf-8" });
     console.log(`Keypair saved to ${filePath}`);
 }
+
+export const memoProgramPubKey = () => new PublicKey(MEMO_PROGRAM_ID);

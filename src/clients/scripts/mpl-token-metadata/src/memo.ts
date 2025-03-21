@@ -28,6 +28,8 @@ async function main() {
     timestamp: Date.now(),
   });
 
+  console.log('memoContent', memoContent);
+
   // Create a memo instruction
   // const memoInstruction = SystemProgram.transfer({
   //   fromPubkey: sender.publicKey,

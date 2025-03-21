@@ -10,8 +10,8 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, writeKeypairToFile } from './utls';
-import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, logTransactionLinkFromDecoded, memoProgramPubKey, writeKeypairToFile } from './utls';
+import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
 import { IKeyStore, KeyStore } from './store';
 
@@ -37,7 +37,7 @@ async function mintTokenCore(
 
   const { signature } = await builder.sendAndConfirm(umi);
   console.log('mintNftCore()', 'mint.pubkey', mint.publicKey);
-  logTransactionLink('mintNftCore()', signature);
+  logTransactionLinkFromDecoded('mintNftCore()', signature);
 
   return mint;
 }
@@ -55,7 +55,7 @@ export async function transferSolCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLink('transferSolCore()', signature);
+  logTransactionLinkFromDecoded('transferSolCore()', signature);
 }
 
 export async function transferTokenCore(
@@ -74,7 +74,7 @@ export async function transferTokenCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLink('transferNftCore()', signature);
+  logTransactionLinkFromDecoded('transferNftCore()', signature);
 }
 
 export async function burnTokenCore(
@@ -91,7 +91,7 @@ export async function burnTokenCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLink('burnNftCore()', signature);
+  logTransactionLinkFromDecoded('burnNftCore()', signature);
 }
 
 async function createAccCore(
@@ -229,6 +229,25 @@ export async function burnToken(instr: IBurnTokenInstr) {
     ownerKps.signer,
     ownerKps.umiKp.publicKey,
   );
+
+  return {};
+}
+
+export async function memo(instr: IMemoInstr) {
+  const umi = buildUmi();
+  const sender = keyStore.getKeypair(instr.sender, umi);
+
+  const memoContent = JSON.stringify(instr.payload);
+
+  const transaction = new Transaction().add({
+    keys: [{ pubkey: sender.w3Kp.publicKey, isSigner: true, isWritable: false }],
+    programId: memoProgramPubKey(),
+    data: Buffer.from(memoContent, "utf-8"),
+  });
+
+  const connection = createConn();
+  const txid = await sendAndConfirmTransaction(connection, transaction, [sender.w3Kp]);
+  logTransactionLink('memo', txid);
 
   return {};
 }

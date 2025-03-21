@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr, IUnsubscribeAccInstr } from './types';
-import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken } from './core';
+import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr, IUnsubscribeAccInstr, IMemoInstr } from './types';
+import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken, memo } from './core';
 import { Subscriber } from './listeners';
 import { SubStore } from './store';
 import { HttpClient } from './http-client';
@@ -93,5 +93,15 @@ export const procUnsubscribeAccCmd = async (req: IReq<IUnsubscribeAccInstr>, res
   subStore.removeSub(req.body.account);
 
   console.debug(`procUnsubscribeAccCmd END.`);
+  res.status(200).json({});
+};
+
+export const procMemoCmd = async (req: IReq<IMemoInstr>, res: Response) => {
+  console.debug(`procMemoCmd START.`);
+  console.debug(`instr`, req.body);
+
+  await memo(req.body);
+
+  console.debug(`procMemoCmd END.`);
   res.status(200).json({});
 };

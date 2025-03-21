@@ -75,3 +75,8 @@ export interface ISubscribeEvt {
   sender: string;
   amt: number;
 }
+
+export interface IMemoInstr extends IInstr {
+  sender: IKeys;
+  payload: any;
+}

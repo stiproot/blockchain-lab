@@ -4,3 +4,5 @@ export const DEFAULT_TOURNAMENT_CFG = 'tournament-keypair.json';
 export const DEFAULT_SOL_TRANSFER_AMT = 0.0001;
 export const DEFAULT_SELLER_FEE_BASIS_POINTS_AMT = 1.0;
 export const DEFAULT_NO_KEYS_IN_KEYSTORE = 3;
+
+export const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";

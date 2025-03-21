@@ -9,7 +9,8 @@ import {
   procMintTokensCmd,
   procCreateAccCmd,
   procSubscribeAccCmd,
-  procUnsubscribeAccCmd
+  procUnsubscribeAccCmd,
+  procMemoCmd
 } from "./cmds";
 import { Request, Response } from 'express';
 
@@ -30,6 +31,7 @@ app.post(`${BASE_URL}/cmd/mint-tokens`, procMintTokensCmd);
 app.post(`${BASE_URL}/cmd/create-acc`, procCreateAccCmd);
 app.post(`${BASE_URL}/cmd/subscribe/acc-transactions`, procSubscribeAccCmd);
 app.post(`${BASE_URL}/cmd/unsubscribe/acc-transactions`, procUnsubscribeAccCmd);
+app.post(`${BASE_URL}/cmd/memo`, procMemoCmd);
 
 // QRYS...
 app.post(`${BASE_URL}/qry`, express.json(), procQry);
