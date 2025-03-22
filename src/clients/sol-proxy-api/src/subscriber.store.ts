@@ -20,6 +20,14 @@ export interface ISubStore {
 export class SubStore implements ISubStore {
   private readonly _memoryStore: any = {};
 
+  constructor() {
+    this.loadSubs()
+      .then(
+        _ => console.log('Subs loaded.'),
+        err => console.error('Failed to load subs.', err)
+      );
+  }
+
   async loadSubs(): Promise<void> {
     const instrs = await readSubsFromDir();
     for (const i of instrs) {
@@ -52,14 +60,17 @@ export class SubStore implements ISubStore {
   }
 }
 
+export const subsBaseDir = (): string => path.resolve(path.join(cfgBaseDir(), DEFAULT_SUBS_DIR));
+export const subFilePath = (fileName: string): string => path.join(subsBaseDir(), fileName);
+
 export async function readSubsFromDir(): Promise<Array<ISubscribeAccInstr>> {
-  const subCfgDir = path.join(cfgBaseDir(), DEFAULT_SUBS_DIR);
-  const cfgFiles = fs.readdirSync(subCfgDir);
-  return await Promise.all(cfgFiles.map(async c => JSON.parse(await readFileContent(c)) as ISubscribeAccInstr));
+  const cfgFiles = fs.readdirSync(subsBaseDir());
+  console.log('readSubsFromDir()', 'cfgFiles', cfgFiles);
+  return await Promise.all(cfgFiles.map(async c => JSON.parse(await readFileContent(subFilePath(c))) as ISubscribeAccInstr));
 }
 
 export function writeSubToFile(instr: ISubscribeAccInstr) {
-  const filePath = path.join(cfgBaseDir(), DEFAULT_SUBS_DIR, `${instr.account}.json`);
+  const filePath = path.join(subsBaseDir(), `${instr.account}.json`);
   const content = JSON.stringify(instr);
   fs.writeFileSync(filePath, content, { encoding: "utf-8" });
 }

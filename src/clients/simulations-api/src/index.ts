@@ -16,7 +16,7 @@ app.post(`${BASE_URL}/cmd/setup`, procSetupCmd);
 app.post(`${BASE_URL}/cmd/collision`, procCollisionCmd);
 app.post(`${BASE_URL}/cmd/pop`, procPopCmd);
 app.post(`${BASE_URL}/cmd/enter-player`, procEnterPlayerCmd);
-app.post(`${BASE_URL}/web-hook/account-transactions`, procAccTransactionsCmd);
+app.post(`${BASE_URL}/webhook/account-transactions`, procAccTransactionsCmd);
 
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {

@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import { procQry } from "./qrys";
 import {
   procTransferSolCmd,
   procTransferTokenCmd,
@@ -32,9 +31,6 @@ app.post(`${BASE_URL}/cmd/create-acc`, procCreateAccCmd);
 app.post(`${BASE_URL}/cmd/subscribe/acc-transactions`, procSubscribeAccCmd);
 app.post(`${BASE_URL}/cmd/unsubscribe/acc-transactions`, procUnsubscribeAccCmd);
 app.post(`${BASE_URL}/cmd/memo`, procMemoCmd);
-
-// QRYS...
-app.post(`${BASE_URL}/qry`, express.json(), procQry);
 
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {

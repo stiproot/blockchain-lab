@@ -45,7 +45,6 @@ export const procEnterPlayerCmd = async (req: IReq<IEnterPlayerInstr>, res: Resp
 export const procAccTransactionsCmd = async (req: IReq<ISubscribeEvt>, res: Response) => {
   console.info(`procAccTransactionsCmd START.`);
   console.debug(`instr`, req.body);
-
   console.info(`procAccTransactionsCmd END.`);
   res.status(200).json({});
 };
