@@ -10,10 +10,10 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, logTransactionLinkFromDecoded, memoProgramPubKey, writeKeypairToFile } from './utls';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, writeKeypairToFile } from './utls';
 import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
-import { IKeyStore, KeyStore } from './store';
+import { IKeyStore, KeyStore } from './key.store';
 
 const keyStore: IKeyStore = new KeyStore();
 
@@ -37,7 +37,7 @@ async function mintTokenCore(
 
   const { signature } = await builder.sendAndConfirm(umi);
   console.log('mintNftCore()', 'mint.pubkey', mint.publicKey);
-  logTransactionLinkFromDecoded('mintNftCore()', signature);
+  logTransactionLink('mintNftCore()', signature);
 
   return mint;
 }
@@ -55,7 +55,7 @@ export async function transferSolCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLinkFromDecoded('transferSolCore()', signature);
+  logTransactionLink('transferSolCore()', signature);
 }
 
 export async function transferTokenCore(
@@ -74,7 +74,7 @@ export async function transferTokenCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLinkFromDecoded('transferNftCore()', signature);
+  logTransactionLink('transferNftCore()', signature);
 }
 
 export async function burnTokenCore(
@@ -91,7 +91,7 @@ export async function burnTokenCore(
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
-  logTransactionLinkFromDecoded('burnNftCore()', signature);
+  logTransactionLink('burnNftCore()', signature);
 }
 
 async function createAccCore(
@@ -241,7 +241,7 @@ export async function memo(instr: IMemoInstr) {
 
   const transaction = new Transaction().add({
     keys: [{ pubkey: sender.w3Kp.publicKey, isSigner: true, isWritable: false }],
-    programId: memoProgramPubKey(),
+    programId: MEMO_PROGRAM_PUBKEY(),
     data: Buffer.from(memoContent, "utf-8"),
   });
 

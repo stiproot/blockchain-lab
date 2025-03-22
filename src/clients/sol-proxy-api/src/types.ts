@@ -80,3 +80,8 @@ export interface IMemoInstr extends IInstr {
   sender: IKeys;
   payload: any;
 }
+
+export enum KeyType {
+  WALLET,
+  TOKEN,
+}

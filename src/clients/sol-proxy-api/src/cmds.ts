@@ -2,8 +2,8 @@ import { Response } from 'express';
 import { IReq, ITransferSolInstr, IBurnTokenInstr, ITransferTokenInstr, ICreateAccInstr, IMintTokenInstr, IMintTokensInstr, IInstr, ISubscribeEvt, ISubscribeAccInstr, IUnsubscribeAccInstr, IMemoInstr } from './types';
 import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken, memo } from './core';
 import { Subscriber } from './listeners';
-import { SubStore } from './store';
-import { HttpClient } from './http-client';
+import { SubStore } from './subscriber.store';
+import { HttpClient } from './http.client';
 
 export const procTransferSolCmd = async (req: IReq<ITransferSolInstr>, res: Response) => {
   console.debug(`procTransferSolCmd START.`);
@@ -79,7 +79,7 @@ export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Re
   };
 
   const sub = new Subscriber(req.body.account, fn);
-  subStore.addSub(req.body.account, sub.start());
+  subStore.addSub(req.body, sub.start());
 
   console.debug(`procSubscribeAccCmd END.`);
   res.status(200).json({});
