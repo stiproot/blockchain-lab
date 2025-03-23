@@ -12,6 +12,7 @@ import {
   procMemoCmd
 } from "./cmds";
 import { Request, Response } from 'express';
+import { delSubsFromDir } from "./subscriber.store";
 
 require("dotenv").config();
 
@@ -37,7 +38,27 @@ app.get('/healthz', (req: Request, res: Response) => {
   res.status(200).send('OK');
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   // startListener();
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Graceful shutdown
+const shutdown = () => {
+  console.log("Shutting down server...");
+
+  server.close(async () => {
+    console.log("HTTP server closed.");
+    await delSubsFromDir();
+    process.exit(0);
+  });
+
+  // Force exit if server doesn't close in time
+  setTimeout(() => {
+    console.error("Forcefully shutting down...");
+    process.exit(1);
+  }, 5000);
+};
+
+process.on("SIGINT", shutdown);  // Ctrl+C in terminal
+process.on("SIGTERM", shutdown); // Kub

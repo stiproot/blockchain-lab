@@ -8,7 +8,7 @@ import {
 import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IPlayerBuyInInstr, ISubscribeEvt } from './types';
 import { DEFAULT_BUY_IN_AMT_LAMP, DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 import { SolProxyClient } from './sol-proxy-client';
-import { buildDefaultTokenName, buildDefaultTokenUri, buildUmi, createConn, createUmiKeypairFromSecretKey, loadNTestWalletKeypairsFromFile, loadWalletKeypairFromFile, range } from './utls';
+import { buildDefaultTokenName, buildDefaultTokenUri, buildUmi, createConn, createUmiKeypairFromSecretKey, loadNTestTokensFromFile, loadNTestWalletKeypairsFromFile, loadWalletKeypairFromFile, range } from './utls';
 import { GameStateStore, IGameState, ITokenPlayerMap } from './game-state.store';
 
 require("dotenv").config();
@@ -25,8 +25,8 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
 
   umi.use(keypairIdentity(tournamentSigner));
 
-  const accs = await createAccs(instr.noPlayers, instr.useExisting, instr.fundAccs);
-  const tokens = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
+  const accs: Array<IKeys> = await createAccs(instr.noPlayers, instr.useExisting, instr.fundAccs);
+  const tokens: Array<IToken> = await createTokens(instr.noPlayers, tournamentWeb3Keypair.publicKey.toBase58(), instr.name);
 
   console.debug("setup()", 'tournament.pubkey', tournamentWeb3Keypair.publicKey.toBase58(), 'accs', accs, 'tokens', tokens);
 
@@ -61,14 +61,6 @@ export async function playerBuyIn(instr: IPlayerBuyInInstr): Promise<any> {
 }
 
 export async function enterPlayer(evt: ISubscribeEvt): Promise<any> {
-  // const transferSolPayload = {
-  //   payer: instr.dest,
-  //   source: instr.dest,
-  //   dest: instr.tournament,
-  //   amt: DEFAULT_BUY_IN_AMT_LAMP,
-  // };
-  // await solProxyClient.transferSol(transferSolPayload);
-
   const PAYMENT_BUFFER_AMT_LAMP = 250;
 
   if (evt.amt < DEFAULT_BUY_IN_AMT_LAMP && Math.abs(evt.amt - DEFAULT_BUY_IN_AMT_LAMP) < PAYMENT_BUFFER_AMT_LAMP) {
@@ -184,9 +176,14 @@ async function createTokens(
   noTokens: number,
   owner: string,
   prefix: string,
+  useExisting: boolean = false
 ): Promise<Array<IToken>> {
-  const tokenIndxs = range(0, noTokens);
+  if (useExisting) {
+    const testKps = await loadNTestTokensFromFile(noTokens);
+    return testKps.map(kp => ({ owner: { pk: owner } as IKeys, mint: { pk: kp.publicKey.toBase58() } as IKeys } as IToken));
+  }
 
+  const tokenIndxs = range(0, noTokens);
   const instrs = tokenIndxs.map(i => ({
     payer: { pk: owner },
     owner: { pk: owner },

@@ -45,6 +45,7 @@ export class KeyStore implements IKeyStore {
       const keypair = await loadWalletKeypairFromFile(cfg);
       this._memoryStore[keypair.publicKey.toBase58()] = keypair;
     }
+    console.log('loadWallets()', 'END', '_memoryStore', this._memoryStore);
   }
 
   async loadTokens() {
@@ -58,6 +59,9 @@ export class KeyStore implements IKeyStore {
 
   getKeypair(pubKey: IKeys, umi: Umi): IKeypairHandle {
     console.log('getKeypair()', 'pubKey', pubKey);
+    if (!(pubKey.pk in this._memoryStore)) {
+      throw new Error(`${pubKey.pk} not found in key store. _memoryStore: ${this._memoryStore}`);
+    }
     const w3 = this._memoryStore[pubKey.pk];
     const umiKp = createUmiKeypairFromSecretKey(umi, w3.secretKey);
     return {

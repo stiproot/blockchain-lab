@@ -346,7 +346,7 @@
                 for (const m of assignedTokens) {
                     const bubble = globalBubbles.filter(b => b.token.mint.pk === m.token);
                     if (bubble.length && !bubble.at(0).owners) {
-                        bubble.at(0).token.owners = [m.player];
+                        bubble.at(0).token.owners = [{ pk: m.player }];
                         bubble.at(0).color = getRandomColor();
                     }
                 }

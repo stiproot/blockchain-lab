@@ -2,7 +2,7 @@ import path from 'path';
 import { ISubscriber, Subscriber } from './listeners';
 import { cfgBaseDir, readFileContent } from './utls';
 import { fs } from 'mz';
-import { ISubscribeAccInstr, ISubscribeEvt } from './types';
+import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from './types';
 import { HttpClient } from './http.client';
 
 require("dotenv").config();
@@ -15,6 +15,7 @@ export interface ISubStore {
   loadSubs(): Promise<void>;
   getSub(key: string): ISubscriber | null;
   addSub(instr: ISubscribeAccInstr, sub: ISubscriber): void;
+  removeSub(instr: IUnsubscribeAccInstr): void;
 }
 
 export class SubStore implements ISubStore {
@@ -55,8 +56,9 @@ export class SubStore implements ISubStore {
     this._memoryStore[instr.account] = sub;
   }
 
-  removeSub(key: string): void {
-    delete this._memoryStore[key];
+  removeSub(instr: IUnsubscribeAccInstr): void {
+    delSubFile(instr);
+    delete this._memoryStore[instr.account];
   }
 }
 
@@ -73,4 +75,15 @@ export function writeSubToFile(instr: ISubscribeAccInstr) {
   const filePath = path.join(subsBaseDir(), `${instr.account}.json`);
   const content = JSON.stringify(instr);
   fs.writeFileSync(filePath, content, { encoding: "utf-8" });
+}
+
+export function delSubFile(instr: IUnsubscribeAccInstr) {
+  const filePath = path.join(subsBaseDir(), `${instr.account}.json`);
+  fs.unlinkSync(filePath);
+}
+
+export async function delSubsFromDir(): Promise<void> {
+  const cfgFiles = fs.readdirSync(subsBaseDir());
+  await Promise.all(cfgFiles.map(c => fs.unlink(path.join(subsBaseDir(), c))));
+  console.log('delSubsFromDir()', 'subs deleted');
 }

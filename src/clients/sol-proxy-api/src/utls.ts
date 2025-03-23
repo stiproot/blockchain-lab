@@ -80,6 +80,20 @@ export async function loadNTestWalletKeypairsFromFile(n: number): Promise<Array<
     return kps;
 }
 
+export async function loadNTestTokensFromFile(n: number): Promise<Array<Web3Keypair>> {
+    const cfgsDir = buildTokenBasePath();
+    const cfgFiles = fs.readdirSync(cfgsDir);
+
+    const kps = [];
+    for (const i of range(0, n)) {
+        const cfg = cfgFiles[i];
+        const keypair = await loadTokenKeypairFromFile(cfg);
+        kps.push(keypair);
+    }
+
+    return kps;
+}
+
 export async function loadDefaultWalletUmiKeypair(umi: Umi): Promise<UmiKeypair> {
     const defaultKp: Web3Keypair = await loadDefaultWalletKeypair();
     const umiKp = createUmiKeypairFromSecretKey(umi, defaultKp.secretKey);
