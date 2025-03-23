@@ -52,26 +52,6 @@
             globalQInit = false;
         }
 
-        function buildSolTransfer(smaller, larger) {
-            const payload = {
-                tournament: globalGameState.tournament,
-                source: larger.token.owners.at(-1),
-                dest: smaller.token.owners.at(-1),
-            };
-            console.log('buildSolTransfer()', 'payload', payload);
-
-            const promiseId = newId();
-
-            const promiseFactory = () => client.transferSol(payload, USE_MOCKED_DATA)
-                .then(data => {
-                    console.log('buildSolTransfer()', 'promiseFactory', 'data', data);
-                    handlePromiseResolved(promiseId);
-                })
-                .catch(error => console.error('API call failed:', error));
-
-            return new FnHandle(promiseId, promiseFactory);
-        }
-
         function buildCollision(smaller, larger) {
             const payload = {
                 tournament: globalGameState.tournament,

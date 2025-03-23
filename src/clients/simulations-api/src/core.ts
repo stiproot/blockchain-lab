@@ -89,63 +89,74 @@ export async function enterPlayer(evt: ISubscribeEvt): Promise<any> {
 
   const mapping = availTokens.at(0)!;
 
-  const transferTokenPayload = {
-    payer: { pk: payer.publicKey.toBase58() } as IKeys,
-    source: { pk: payer.publicKey.toBase58() } as IKeys,
-    dest: { pk: evt.sender } as IKeys,
-    mint: { pk: mapping.token } as IKeys,
+  const transferMemoInstr = {
+    sender: { pk: payer.publicKey.toBase58() } as IKeys,
+    payload: {
+      type: 'vrtl_nft_transfer',
+      from: payer.publicKey.toBase58(),
+      to: evt.sender,
+      nft_mint: mapping.token,
+    }
   };
 
   console.log(`Payment received, sending player ${evt.sender} token ${mapping.token}`);
 
   mapping.player = evt.sender;
-  await solProxyClient.transferToken(transferTokenPayload);
+  await solProxyClient.publishMemo(transferMemoInstr);
 
   return {};
 }
 
 export async function collision(instr: ICollisionInstr): Promise<any> {
-  const transferSolPayload = {
-    payer: instr.tournament,
-    source: instr.source,
-    dest: instr.dest,
-    amt: DEFAULT_SOL_FUND_AMT
-  };
-  await solProxyClient.transferSol(transferSolPayload);
-
-  const transferTokenPayload = {
-    payer: instr.tournament,
-    source: instr.source,
-    dest: instr.dest,
-    mint: instr.mint
-  };
-  await solProxyClient.transferToken(transferTokenPayload);
-
   const gameState = gameStateStore.getState();
   gameState.mappings.filter(m => m.token === instr.mint.pk).at(0)!.player = instr.dest.pk;
+
+  const burnTokenMemoInstr = {
+    sender: instr.tournament,
+    payload: {
+      type: 'nft_burn',
+      nft_mint: instr.mint.pk,
+      ts: Date.now(),
+    }
+  };
+
+  const burnTokenInstr = {
+    payer: instr.tournament,
+    owner: instr.tournament,
+    mint: instr.mint
+  };
+
+  await Promise.all([
+    solProxyClient.publishMemo(burnTokenMemoInstr),
+    solProxyClient.burnToken(burnTokenInstr)
+  ])
 
   return {};
 }
 
 export async function pop(instr: IPopInstr): Promise<any> {
-  const transferTokenPayload = {
-    payer: instr.tournament,
-    source: instr.source,
-    dest: instr.dest,
-    mint: instr.mint
+  const gameState = gameStateStore.getState();
+  gameState.mappings = gameState.mappings.filter(m => m.token !== instr.mint.pk);
+
+  const burnTokenMemoInstr = {
+    sender: instr.tournament,
+    payload: {
+      type: 'nft_burn',
+      nft_mint: instr.mint.pk,
+      ts: Date.now(),
+    }
   };
 
-  await solProxyClient.transferToken(transferTokenPayload);
-
-  const burnTokenPayload = {
+  const burnTokenInstr = {
     payer: instr.tournament,
     owner: instr.tournament,
     mint: instr.mint
   };
-  await solProxyClient.burnToken(burnTokenPayload);
 
-  const gameState = gameStateStore.getState();
-  gameState.mappings = gameState.mappings.filter(m => m.token !== instr.mint.pk);
+  await Promise.all([
+    solProxyClient.publishMemo(burnTokenMemoInstr),
+    solProxyClient.burnToken(burnTokenInstr)
+  ])
 
   return {};
 }
