@@ -58,3 +58,8 @@ export interface IToken {
   owner: IKeys;
   mint: IKeys;
 }
+
+export enum KeyType {
+  WALLET,
+  TOKEN,
+}

@@ -11,7 +11,7 @@ import {
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, writeKeypairToFile } from './utls';
-import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
+import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr, KeyType } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
 import { IKeyStore, KeyStore } from './key.store';
 
@@ -167,7 +167,7 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
     ownerKps.umiKp.publicKey,
   );
 
-  writeKeypairToFile(token.secretKey);
+  writeKeypairToFile(token.secretKey, KeyType.TOKEN);
   await keyStore.loadTokens();
 
   const resp = {

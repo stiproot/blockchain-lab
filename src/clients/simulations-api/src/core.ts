@@ -5,11 +5,10 @@ import {
   Keypair as Web3Keypair,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
-import { loadKeypairFromCfg, buildUmi, createConn, createUmiKeypairFromSecretKey, range, buildTokenName, buildTokenUri, buildTestWalletUmiKeypair } from './utls';
 import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd } from './types';
 import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_BUY_IN_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
-
 import { SolProxyClient } from './sol-proxy-client';
+import { buildDefaultTokenName, buildDefaultTokenUri, buildUmi, createConn, createUmiKeypairFromSecretKey, loadNTestWalletKeypairsFromFile, loadWalletKeypairFromFile, range } from './utls';
 
 require("dotenv").config();
 
@@ -18,7 +17,7 @@ const solProxyClient = new SolProxyClient();
 export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const umi = buildUmi();
 
-  const tournamentWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const tournamentWeb3Keypair: Web3Keypair = await loadWalletKeypairFromFile(DEFAULT_TOURNAMENT_CFG);
   const tournamentUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, tournamentWeb3Keypair.secretKey);
   const tournamentSigner: KeypairSigner = createSignerFromKeypair(umi, tournamentUmiKeypair);
 
@@ -31,7 +30,7 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
 
   await solProxyClient.subAccTransactions({
     extId: instr.name,
-    webhookUrl: `${process.env.SIM_API_HOST}/sim/web-hook/account-transactions`,
+    webhookUrl: `${process.env.SIM_API_HOST}/sim/webhook/account-transactions`,
     account: tournamentWeb3Keypair.publicKey.toBase58()
   });
 
@@ -111,21 +110,20 @@ async function createAccs(
   fundAccs: boolean = false
 ): Promise<Array<IKeys>> {
   const umi = buildUmi();
-  const payerWeb3Keypair: Web3Keypair = await loadKeypairFromCfg(DEFAULT_TOURNAMENT_CFG);
+  const payerWeb3Keypair: Web3Keypair = await loadWalletKeypairFromFile(DEFAULT_TOURNAMENT_CFG);
   const payerUmiKeypair: UmiKeypair = createUmiKeypairFromSecretKey(umi, payerWeb3Keypair.secretKey);
   const payerSigner: KeypairSigner = createSignerFromKeypair(umi, payerUmiKeypair);
 
   umi.use(keypairIdentity(payerSigner));
 
-  const indxs = range(0, noAccs);
-  const accs = await Promise.all(indxs.map(i => buildTestWalletUmiKeypair(umi, i)));
+  const testKps = await loadNTestWalletKeypairsFromFile(noAccs);
 
   if (fundAccs) {
     console.log('createAccs()', 'funding accounts');
-    await Promise.all(accs.map(a => airdropSol(a.publicKey.toString())));
+    await Promise.all(testKps.map(kp => airdropSol(kp.publicKey.toBase58())));
   }
 
-  return accs.map(a => ({ pk: a.publicKey.toString() } as IKeys));
+  return testKps.map(kp => ({ pk: kp.publicKey.toBase58() } as IKeys));
 }
 
 async function createTokens(
@@ -138,8 +136,8 @@ async function createTokens(
   const instrs = tokenIndxs.map(i => ({
     payer: { pk: owner },
     owner: { pk: owner },
-    name: buildTokenName(prefix, i),
-    uri: buildTokenUri(prefix, i),
+    name: buildDefaultTokenName(prefix, i),
+    uri: buildDefaultTokenUri(prefix, i),
   }))
 
   return await solProxyClient.mintTokens({ instrs: instrs });

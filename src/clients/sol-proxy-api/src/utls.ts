@@ -66,6 +66,20 @@ export async function loadDefaultWalletKeypair(): Promise<Web3Keypair> {
     return cliKp;
 }
 
+export async function loadNTestWalletKeypairsFromFile(n: number): Promise<Array<Web3Keypair>> {
+    const walletCfgDir = buildWalletBasePath();
+    const cfgFiles = fs.readdirSync(walletCfgDir).filter(f => f !== DEFAULT_TOURNAMENT_CFG);
+
+    const kps = [];
+    for (const i of range(0, n)) {
+        const cfg = cfgFiles[i];
+        const keypair = await loadWalletKeypairFromFile(cfg);
+        kps.push(keypair);
+    }
+
+    return kps;
+}
+
 export async function loadDefaultWalletUmiKeypair(umi: Umi): Promise<UmiKeypair> {
     const defaultKp: Web3Keypair = await loadDefaultWalletKeypair();
     const umiKp = createUmiKeypairFromSecretKey(umi, defaultKp.secretKey);
