@@ -9,6 +9,7 @@ const TRANSFER_TOKEN_ROUTE = `sol/cmd/transfer-token`;
 const BURN_TOKEN_ROUTE = `sol/cmd/burn-token`;
 const SUB_ACC_TRANSACTIONS_ROUTE = `sol/cmd/subscribe/acc-transactions`;
 const UNSUB_ACC_TRANSACTIONS_ROUTE = `sol/cmd/unsubscribe/acc-transactions`;
+const PUBLISH_MEMO_ROUTE = `sol/cmd/memo`;
 
 export class SolProxyClient {
   private readonly _baseUrl: string;
@@ -45,5 +46,9 @@ export class SolProxyClient {
 
   async unsubAccTransactions(payload: any): Promise<any> {
     return await this._httpClient.post(UNSUB_ACC_TRANSACTIONS_ROUTE, payload);
+  }
+
+  async publishMemo(payload: any): Promise<any> {
+    return await this._httpClient.post(PUBLISH_MEMO_ROUTE, payload);
   }
 }

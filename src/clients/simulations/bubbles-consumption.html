@@ -249,7 +249,7 @@
                 name: 't1',
                 noPlayers: NO_PLAYERS,
                 useExisting: true,
-                fundAccs: true,
+                fundAccs: false,
             };
             const resp = await client.setup(payload, USE_MOCKED_DATA);
             console.log('setup', 'resp', resp);
@@ -274,15 +274,17 @@
                 mint: token.mint,
             };
             console.log('initPlayers()', 'payload', payload);
-            await client.enterPlayer(payload, USE_MOCKED_DATA);
+            await client.playerBuyIn(payload, USE_MOCKED_DATA);
 
-            const bubble = globalBubbles.filter(b => b.token.indx === token.indx)[0];
-            bubble.color = getRandomColor();
-            bubble.token.owners = [acc];
+            // const bubble = globalBubbles.filter(b => b.token.indx === token.indx)[0];
+            // bubble.color = getRandomColor();
+            // bubble.token.owners = [acc];
         }
 
         async function initPlayers() {
-            await Promise.all(globalBubbles.map((b, i) => initPlayer(globalGameState.accs[i], b.token)));
+            for (let i = 0; i < globalGameState.accs.length; i++) {
+                await initPlayer(globalGameState.accs[i], globalBubbles[i].token);
+            }
         }
 
         function initPopInterval() {
@@ -324,15 +326,48 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+
+        let initIntervalId;
+        function initGameStateInterval() {
+            initIntervalId = setInterval(async () => {
+                if (globalInit) {
+                    return;
+                }
+
+                const gameState = await client.gameState();
+                console.log('initGameStateIniterval()', 'gameState', gameState);
+                const assignedTokens = gameState.mappings.filter(m => m.token && m.player);
+                if (!assignedTokens.length) {
+                    console.log('initGameStateIniterval()', 'no tokens assigned');
+                    return;
+                }
+
+                for (const m of assignedTokens) {
+                    const bubble = globalBubbles.filter(b => b.token.mint.pk === m.token);
+                    if (bubble.length && !bubble.at(0).owners) {
+                        bubble.at(0).token.owners = [m.player];
+                        bubble.at(0).color = getRandomColor();
+                    }
+                }
+
+                if (gameState.mappings.filter(m => m.player === null).length) {
+                    console.log('initGameStateInterval()', 'gameState', gameState);
+                    return;
+                }
+
+                globalInit = true;
+                initPopInterval();
+                initQInterval();
+            }, 3000);
+        }
+
         async function init() {
             await setup();
             initBubblesData(globalGameState.tokens);
             animate();
             await sleep(10_000);
             await initPlayers();
-            globalInit = true;
-            initPopInterval();
-            initQInterval();
+            initGameStateInterval();
         }
 
         init()

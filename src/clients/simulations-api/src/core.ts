@@ -5,14 +5,16 @@ import {
   Keypair as Web3Keypair,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
-import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IEnterPlayerInstr, ICmd } from './types';
-import { DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_BUY_IN_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
+import { IKeys, ISetupResp, IToken, ISetupInstr, ICollisionInstr, IPopInstr, IPlayerBuyInInstr, ISubscribeEvt } from './types';
+import { DEFAULT_BUY_IN_AMT_LAMP, DEFAULT_SOL_FUND_AMT, DEFAULT_TOURNAMENT_CFG } from './consts';
 import { SolProxyClient } from './sol-proxy-client';
 import { buildDefaultTokenName, buildDefaultTokenUri, buildUmi, createConn, createUmiKeypairFromSecretKey, loadNTestWalletKeypairsFromFile, loadWalletKeypairFromFile, range } from './utls';
+import { GameStateStore, IGameState, ITokenPlayerMap } from './game-state.store';
 
 require("dotenv").config();
 
 const solProxyClient = new SolProxyClient();
+export const gameStateStore = new GameStateStore();
 
 export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   const umi = buildUmi();
@@ -34,6 +36,8 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
     account: tournamentWeb3Keypair.publicKey.toBase58()
   });
 
+  gameStateStore.setState({ mappings: tokens.map(t => ({ player: null, token: t.mint.pk } as ITokenPlayerMap)) } as IGameState);
+
   const resp = {
     tournament: {
       pk: tournamentUmiKeypair.publicKey.toString()
@@ -45,22 +49,66 @@ export async function setup(instr: ISetupInstr): Promise<ISetupResp> {
   return resp;
 }
 
-export async function enterPlayer(instr: IEnterPlayerInstr): Promise<any> {
+export async function playerBuyIn(instr: IPlayerBuyInInstr): Promise<any> {
   const transferSolPayload = {
     payer: instr.dest,
     source: instr.dest,
     dest: instr.tournament,
-    amt: DEFAULT_TOURNAMENT_BUY_IN_AMT,
+    amt: DEFAULT_BUY_IN_AMT_LAMP,
   };
   await solProxyClient.transferSol(transferSolPayload);
+  return {};
+}
+
+export async function enterPlayer(evt: ISubscribeEvt): Promise<any> {
+  // const transferSolPayload = {
+  //   payer: instr.dest,
+  //   source: instr.dest,
+  //   dest: instr.tournament,
+  //   amt: DEFAULT_BUY_IN_AMT_LAMP,
+  // };
+  // await solProxyClient.transferSol(transferSolPayload);
+
+  const PAYMENT_BUFFER_AMT_LAMP = 250;
+
+  if (evt.amt < DEFAULT_BUY_IN_AMT_LAMP && Math.abs(evt.amt - DEFAULT_BUY_IN_AMT_LAMP) < PAYMENT_BUFFER_AMT_LAMP) {
+    throw Error(`Payment of ${evt.amt} does not meet the tournament buy in amount ${DEFAULT_BUY_IN_AMT_LAMP} with a margin of error of ${PAYMENT_BUFFER_AMT_LAMP}`);
+  }
+
+  const payer: Web3Keypair = await loadWalletKeypairFromFile(DEFAULT_TOURNAMENT_CFG);
+
+  const gameState = gameStateStore.getState();
+  const assignedTokens = gameState.mappings.filter(m => m.player === evt.sender);
+  if (assignedTokens.length) {
+    console.warn(`Token ${assignedTokens.at(0)?.token} has already been assigned to player ${assignedTokens.at(0)?.player}.`);
+    return {};
+  }
+
+  const availTokens = gameState.mappings.filter(m => m.player === null);
+  if (!availTokens.length) {
+    console.warn('All tokens have been assigned.');
+    const tournamentWeb3Keypair: Web3Keypair = await loadWalletKeypairFromFile(DEFAULT_TOURNAMENT_CFG);
+    console.log('Unsubscribing account transaction handler.');
+    await solProxyClient.unsubAccTransactions({
+      account: tournamentWeb3Keypair.publicKey.toBase58()
+    });
+    return {};
+  }
+
+  const mapping = availTokens.at(0)!;
 
   const transferTokenPayload = {
-    payer: instr.tournament,
-    source: instr.tournament,
-    dest: instr.dest,
-    mint: instr.mint
+    payer: { pk: payer.publicKey.toBase58() } as IKeys,
+    source: { pk: payer.publicKey.toBase58() } as IKeys,
+    dest: { pk: evt.sender } as IKeys,
+    mint: { pk: mapping.token } as IKeys,
   };
+
+  console.log(`Payment received, sending player ${evt.sender} token ${mapping.token}`);
+
+  mapping.player = evt.sender;
   await solProxyClient.transferToken(transferTokenPayload);
+
   return {};
 }
 
@@ -81,6 +129,9 @@ export async function collision(instr: ICollisionInstr): Promise<any> {
   };
   await solProxyClient.transferToken(transferTokenPayload);
 
+  const gameState = gameStateStore.getState();
+  gameState.mappings.filter(m => m.token === instr.mint.pk).at(0)!.player = instr.dest.pk;
+
   return {};
 }
 
@@ -100,6 +151,9 @@ export async function pop(instr: IPopInstr): Promise<any> {
     mint: instr.mint
   };
   await solProxyClient.burnToken(burnTokenPayload);
+
+  const gameState = gameStateStore.getState();
+  gameState.mappings = gameState.mappings.filter(m => m.token !== instr.mint.pk);
 
   return {};
 }

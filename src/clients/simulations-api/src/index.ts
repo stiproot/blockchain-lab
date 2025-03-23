@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { procSetupCmd, procCollisionCmd, procPopCmd, procEnterPlayerCmd, procAccTransactionsCmd } from "./cmds";
+import { procSetupCmd, procCollisionCmd, procPopCmd, procPlayerBuyInCmd, procAccTransactionsCmd, procGameStateQry } from "./cmds";
 import { Request, Response } from 'express';
 
 require("dotenv").config();
@@ -15,8 +15,11 @@ app.use(cors(), express.json());
 app.post(`${BASE_URL}/cmd/setup`, procSetupCmd);
 app.post(`${BASE_URL}/cmd/collision`, procCollisionCmd);
 app.post(`${BASE_URL}/cmd/pop`, procPopCmd);
-app.post(`${BASE_URL}/cmd/enter-player`, procEnterPlayerCmd);
+app.post(`${BASE_URL}/cmd/player-buy-in`, procPlayerBuyInCmd);
 app.post(`${BASE_URL}/webhook/account-transactions`, procAccTransactionsCmd);
+
+// QRYS...
+app.get(`${BASE_URL}/qry/game-state`, procGameStateQry);
 
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {

@@ -41,7 +41,7 @@ export interface IPopInstr extends IInstr {
   mint: IKeys;
 }
 
-export interface IEnterPlayerInstr extends IInstr {
+export interface IPlayerBuyInInstr extends IInstr {
   tournament: IKeys;
   dest: IKeys;
   mint: IKeys;
