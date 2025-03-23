@@ -282,6 +282,7 @@
         }
 
         async function initPlayers() {
+            // await Promise.all(globalBubbles.map((b, i) => initPlayer(globalGameState.accs[i], b.token)));
             for (let i = 0; i < globalGameState.accs.length; i++) {
                 await initPlayer(globalGameState.accs[i], globalBubbles[i].token);
             }
