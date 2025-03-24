@@ -1,4 +1,4 @@
-import { generateSigner, keypairIdentity, KeypairSigner, percentAmount, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { generateSigner, keypairIdentity, KeypairSigner, lamports, percentAmount, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
 import { burnV1, createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   PublicKey as Web3PublicKey,
@@ -51,7 +51,7 @@ export async function transferSolCore(
   const builder = mplTransferSol(umi, {
     source: sourceSigner,
     destination: destPubKey,
-    amount: sol(amt),
+    amount: lamports(amt),
   });
 
   const { signature } = await builder.sendAndConfirm(umi);
@@ -142,7 +142,7 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   const acc = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
 
   writeKeypairToFile(acc.secretKey);
-  await keyStore.loadTokens();
+  await keyStore.loadWallets();
 
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
@@ -190,7 +190,7 @@ export async function transferSol(instr: ITransferSolInstr) {
 
   const destKps = keyStore.getKeypair(instr.dest, umi);
 
-  await transferSolCore(umi, srcKps.signer, destKps.umiKp.publicKey);
+  await transferSolCore(umi, srcKps.signer, destKps.umiKp.publicKey, instr.amount);
 
   return {};
 }

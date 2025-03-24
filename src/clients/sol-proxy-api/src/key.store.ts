@@ -30,11 +30,11 @@ export class KeyStore implements IKeyStore {
         err => console.error('Failed to load wallets into keystore', err)
       );
 
-    this.loadTokens()
-      .then(
-        _ => console.log('Tokens loaded into keystore.'),
-        err => console.error('Failed to load tokens into keystore', err)
-      );
+    // this.loadTokens()
+    //   .then(
+    //     _ => console.log('Tokens loaded into keystore.'),
+    //     err => console.error('Failed to load tokens into keystore', err)
+    //   );
   }
 
   async loadWallets() {
