@@ -130,7 +130,8 @@ export const buildDefaultTokenUri = (name: string, tNo: number): string => `${DE
 
 export function logTransactionLink(prefix: string, sig: string | Uint8Array) {
     let encodedSig = sig instanceof Uint8Array ? bs58.encode(sig) : sig;
-    console.log(prefix, `https://explorer.solana.com/tx/${encodedSig}?cluster=${process.env.SOLNET}`);
+    const cluster = process.env.SOLNET === 'localnet' ? 'custom' : process.env.SOLNET;
+    console.log(prefix, `https://explorer.solana.com/tx/${encodedSig}?cluster=${cluster}`);
 }
 
 export function writeKeypairToFile(secretKey: Uint8Array, keyType: KeyType = KeyType.WALLET) {

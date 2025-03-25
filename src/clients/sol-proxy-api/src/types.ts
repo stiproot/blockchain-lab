@@ -77,7 +77,7 @@ export interface ISubscribeEvt {
 
 export interface IMemoInstr extends IInstr {
   sender: IKeys;
-  payload: any;
+  payload: string;
 }
 
 export enum KeyType {

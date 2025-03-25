@@ -237,12 +237,10 @@ export async function memo(instr: IMemoInstr) {
   const umi = buildUmi();
   const sender = keyStore.getKeypair(instr.sender, umi);
 
-  const memoContent = JSON.stringify(instr.payload);
-
   const transaction = new Transaction().add({
     keys: [{ pubkey: sender.w3Kp.publicKey, isSigner: true, isWritable: false }],
     programId: MEMO_PROGRAM_PUBKEY(),
-    data: Buffer.from(memoContent, "utf-8"),
+    data: Buffer.from(instr.payload, "utf-8"),
   });
 
   const connection = createConn();
