@@ -100,7 +100,7 @@ async function createAccCore(
   fundingWallet: Web3Keypair,
   lamports: number,
   newAccountKeypair: Web3Keypair | null = null
-): Promise<UmiKeypair> {
+): Promise<Web3Keypair> {
   const web3Keypair: Web3Keypair = newAccountKeypair || Web3Keypair.generate();
 
   const instruction = SystemProgram.createAccount({
@@ -115,7 +115,7 @@ async function createAccCore(
   const signature = await sendAndConfirmTransaction(connection, transaction, [fundingWallet, web3Keypair]);
 
   console.log('createAccount()', 'pubKey', web3Keypair.publicKey.toBase58(), 'signature', signature);
-  return createUmiKeypairFromSecretKey(umi, web3Keypair.secretKey);
+  return web3Keypair;
 }
 
 async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_SOL_FUND_AMT) {
@@ -139,17 +139,17 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
 
   const connection: Connection = createConn();
   const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
-  const acc = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
+  const acc: Web3Keypair = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
 
   writeKeypairToFile(acc.secretKey);
   await keyStore.loadWallets();
 
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
-    await airdropSol(acc.publicKey.toString());
+    await airdropSol(acc.publicKey.toBase58());
   }
 
-  return ({ pk: acc.publicKey.toString() } as IKeys);
+  return ({ pk: acc.publicKey.toBase58() } as IKeys);
 }
 
 export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {

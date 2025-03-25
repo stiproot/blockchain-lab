@@ -55,7 +55,6 @@ export interface IBurnTokenInstr extends IInstr {
 
 export interface ICreateAccInstr extends IInstr {
   payer: IKeys;
-  useExisting: boolean;
   fundAcc: boolean;
 }
 

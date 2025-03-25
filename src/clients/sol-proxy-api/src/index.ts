@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction } from "express";
 import cors from "cors";
 import {
   procTransferSolCmd,
@@ -36,6 +36,11 @@ app.post(`${BASE_URL}/cmd/memo`, procMemoCmd);
 // HEALTH...
 app.get('/healthz', (req: Request, res: Response) => {
   res.status(200).send('OK');
+});
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Internal Server Error" });
 });
 
 const server = app.listen(PORT, () => {
