@@ -12,7 +12,7 @@ import {
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, writeKeypairToFile } from './utls';
 import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr, KeyType } from './types';
-import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_SOL_TRANSFER_AMT } from './consts';
+import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT, DEFAULT_ACC_ACTIVATION_LAMPORTS_AMT } from './consts';
 import { IKeyStore, KeyStore } from './key.store';
 
 const keyStore: IKeyStore = new KeyStore();
@@ -46,7 +46,7 @@ export async function transferSolCore(
   umi: Umi,
   sourceSigner: KeypairSigner,
   destPubKey: PublicKey,
-  amt: number = DEFAULT_SOL_TRANSFER_AMT
+  amt: number = DEFAULT_LAMPORTS_TRANSFER_AMT
 ) {
   const builder = mplTransferSol(umi, {
     source: sourceSigner,
@@ -99,6 +99,7 @@ async function createAccCore(
   connection: Connection,
   fundingWallet: Web3Keypair,
   lamports: number,
+  space: number,
   newAccountKeypair: Web3Keypair | null = null
 ): Promise<Web3Keypair> {
   const web3Keypair: Web3Keypair = newAccountKeypair || Web3Keypair.generate();
@@ -106,8 +107,8 @@ async function createAccCore(
   const instruction = SystemProgram.createAccount({
     fromPubkey: fundingWallet.publicKey, // Funding wallet
     newAccountPubkey: web3Keypair.publicKey,
-    lamports, // Minimum SOL needed
-    space: 0, // Space required
+    lamports,
+    space: space,
     programId: SystemProgram.programId, // Assign to system program
   });
 
@@ -132,14 +133,17 @@ async function airdropSol(recipientPubKey: string, amountSol: number = DEFAULT_S
 
 export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   const umi = buildUmi();
+  const connection: Connection = createConn();
 
   const payerKps = keyStore.getKeypair(instr.payer, umi);
 
   umi.use(keypairIdentity(payerKps.signer));
 
-  const connection: Connection = createConn();
-  const lamports = await connection.getMinimumBalanceForRentExemption(0); // Get rent-exempt amount
-  const acc: Web3Keypair = await createAccCore(umi, connection, payerKps.w3Kp, lamports);
+  const space = 100; // Size of the account in bytes
+  const lamports = await connection.getMinimumBalanceForRentExemption(space);
+  console.log(`Rent-exempt minimum balance: ${lamports} lamports`);
+
+  const acc: Web3Keypair = await createAccCore(umi, connection, payerKps.w3Kp, lamports, space);
 
   writeKeypairToFile(acc.secretKey);
   await keyStore.loadWallets();
@@ -147,6 +151,8 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
     await airdropSol(acc.publicKey.toBase58());
+    // const umiKp = createUmiKeypairFromSecretKey(umi, acc.secretKey);
+    // await transferSolCore(umi, payerKps.signer, umiKp.publicKey, DEFAULT_ACC_ACTIVATION_LAMPORTS_AMT);
   }
 
   return ({ pk: acc.publicKey.toBase58() } as IKeys);

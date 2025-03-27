@@ -6,3 +6,6 @@ sol-run-mpl:
 
 sol-config-localnet:
 	solana config set --url http://127.0.0.1:8899
+
+sol-config-devnet:
+	solana config set --url https://api.devnet.solana.com

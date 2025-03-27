@@ -48,7 +48,7 @@ export class Subscriber implements ISubscriber {
         if (this._fn) {
           await this._fn({
             sender: sender,
-            amt: amount,
+            amtLamports: amount,
             account: this._account.toBase58()
           } as ISubscribeEvt);
         }
