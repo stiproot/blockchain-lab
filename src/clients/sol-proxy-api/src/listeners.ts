@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { createConn } from "./utls";
-import { ISubscribeEvt } from "./types";
+import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from "./types";
 
 require("dotenv").config();
 
@@ -8,6 +8,13 @@ export interface ISubscriber {
   subscriptionId: number | null;
   start(): ISubscriber;
   stop(): void;
+}
+
+export interface ISubStore {
+  loadSubs(): Promise<void>;
+  getSub(key: string): ISubscriber | null;
+  addSub(instr: ISubscribeAccInstr, sub: ISubscriber): void;
+  removeSub(instr: IUnsubscribeAccInstr): void;
 }
 
 export class Subscriber implements ISubscriber {
@@ -47,9 +54,9 @@ export class Subscriber implements ISubscriber {
 
         if (this._fn) {
           await this._fn({
-            sender: sender,
+            senderPk: sender,
             amtLamports: amount,
-            account: this._account.toBase58()
+            accountPk: this._account.toBase58()
           } as ISubscribeEvt);
         }
       }

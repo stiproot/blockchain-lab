@@ -12,7 +12,7 @@ import {
   procMemoCmd
 } from "./cmds";
 import { Request, Response } from 'express';
-import { delSubsFromDir } from "./subscriber.store";
+import { delSubsFromDir } from "./subscribers.filestore";
 
 require("dotenv").config();
 

@@ -14,10 +14,10 @@ import {
 } from './types';
 import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken, memo } from './core';
 import { Subscriber } from './listeners';
-import { SubStore } from './subscriber.store';
 import { HttpClient } from './http.client';
+import { SubStateStore } from './subscribers.statestore';
 
-const subStore = new SubStore();
+const subStore = new SubStateStore();
 const httpClient = new HttpClient();
 
 export const procTransferSolCmd = async (req: IReq<ITransferSolInstr>, res: Response) => {
@@ -90,8 +90,8 @@ export const procSubscribeAccCmd = async (req: IReq<ISubscribeAccInstr>, res: Re
     await httpClient.post(req.body.webhookUrl, evt);
   };
 
-  const sub = new Subscriber(req.body.account, fn);
-  subStore.addSub(req.body, sub.start());
+  const sub = new Subscriber(req.body.accountPk, fn);
+  await subStore.addSub(req.body, sub.start());
 
   console.debug(`procSubscribeAccCmd END.`);
   res.status(200).json({});
@@ -101,7 +101,7 @@ export const procUnsubscribeAccCmd = async (req: IReq<IUnsubscribeAccInstr>, res
   console.debug(`procUnsubscribeAccCmd START.`);
   console.debug(`instr`, req.body);
 
-  subStore.getSub(req.body.account)?.stop();
+  subStore.getSub(req.body.accountPk)?.stop();
   subStore.removeSub(req.body);
 
   console.debug(`procUnsubscribeAccCmd END.`);
