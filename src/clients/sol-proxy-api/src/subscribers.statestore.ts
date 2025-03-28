@@ -51,11 +51,13 @@ export class SubStateStore implements ISubStore {
 }
 
 export async function readSubsFromStateStore(): Promise<Array<ISubscribeAccInstr>> {
-  const resp = await httpClient.get<Array<ISubscribeAccInstr>>(process.env.SUBS_STATESTORE_READ_URL!);
+  const url = process.env.SUBS_STATESTORE_READ_URL!;
+  const resp = await httpClient.get<Array<ISubscribeAccInstr>>(url);
   console.log('readSubsFromStateStore()', 'resp', resp);
   return resp;
 }
 
 export async function writeSubToStateStore(instr: ISubscribeAccInstr): Promise<void> {
-  await httpClient.post(process.env.SUBS_STATESTORE_WRITE_URL!, [instr]);
+  const url = process.env.SUBS_STATESTORE_WRITE_URL!;
+  await httpClient.post(url, [instr]);
 }

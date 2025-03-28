@@ -1,4 +1,4 @@
-import { generateSigner, keypairIdentity, KeypairSigner, lamports, percentAmount, PublicKey, sol, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
+import { generateSigner, keypairIdentity, KeypairSigner, lamports, percentAmount, PublicKey, Umi } from '@metaplex-foundation/umi';
 import { burnV1, createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   PublicKey as Web3PublicKey,
@@ -11,11 +11,13 @@ import {
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, writeKeypairToFile } from './utls';
-import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr, KeyType } from './types';
-import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT, DEFAULT_ACC_ACTIVATION_LAMPORTS_AMT } from './consts';
-import { IKeyStore, KeyStore } from './key.store';
+import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
+import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT } from './consts';
+import { createKeyStore } from './factories';
+import { IKeyStore } from './keys';
 
-const keyStore: IKeyStore = new KeyStore();
+const keyStore: IKeyStore = createKeyStore();
+
 
 async function mintTokenCore(
   umi: Umi,
@@ -135,7 +137,7 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
   const umi = buildUmi();
   const connection: Connection = createConn();
 
-  const payerKps = keyStore.getKeypair(instr.payer, umi);
+  const payerKps = await keyStore.getKeypair(instr.payer, umi);
 
   umi.use(keypairIdentity(payerKps.signer));
 
@@ -150,9 +152,8 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
 
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
-    await airdropSol(acc.publicKey.toBase58());
-    // const umiKp = createUmiKeypairFromSecretKey(umi, acc.secretKey);
-    // await transferSolCore(umi, payerKps.signer, umiKp.publicKey, DEFAULT_ACC_ACTIVATION_LAMPORTS_AMT);
+    const umiKp = createUmiKeypairFromSecretKey(umi, acc.secretKey);
+    await transferSolCore(umi, payerKps.signer, umiKp.publicKey, lamports);
   }
 
   return ({ pk: acc.publicKey.toBase58() } as IKeys);
@@ -160,10 +161,10 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
 
 export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
   const umi = buildUmi();
-  const payerKps = keyStore.getKeypair(instr.payer, umi);
+  const payerKps = await keyStore.getKeypair(instr.payer, umi);
   umi.use(keypairIdentity(payerKps.signer));
 
-  const ownerKps = keyStore.getKeypair(instr.owner, umi);
+  const ownerKps = await keyStore.getKeypair(instr.owner, umi);
 
   console.log('mintToken()', 'attempting minting...');
   const token = await mintTokenCore(
@@ -173,8 +174,8 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
     ownerKps.umiKp.publicKey,
   );
 
-  writeKeypairToFile(token.secretKey, KeyType.TOKEN);
-  await keyStore.loadTokens();
+  // writeKeypairToFile(token.secretKey, KeyType.TOKEN);
+  // await keyStore.loadTokens();
 
   const resp = {
     mint: { pk: token.publicKey.toString() } as IKeys,
@@ -191,10 +192,10 @@ export async function mintTokens(instr: IMintTokensInstr): Promise<Array<IToken>
 
 export async function transferSol(instr: ITransferSolInstr) {
   const umi = buildUmi();
-  const srcKps = keyStore.getKeypair(instr.source, umi);
+  const srcKps = await keyStore.getKeypair(instr.source, umi);
   umi.use(keypairIdentity(srcKps.signer));
 
-  const destKps = keyStore.getKeypair(instr.dest, umi);
+  const destKps = await keyStore.getKeypair(instr.dest, umi);
 
   await transferSolCore(umi, srcKps.signer, destKps.umiKp.publicKey, instr.amount);
 
@@ -203,11 +204,11 @@ export async function transferSol(instr: ITransferSolInstr) {
 
 export async function transferToken(instr: ITransferTokenInstr) {
   const umi = buildUmi();
-  const srcKps = keyStore.getKeypair(instr.source, umi);
+  const srcKps = await keyStore.getKeypair(instr.source, umi);
   umi.use(keypairIdentity(srcKps.signer));
 
-  const mintKps = keyStore.getKeypair(instr.mint, umi);
-  const destKps = keyStore.getKeypair(instr.dest, umi);
+  const mintKps = await keyStore.getKeypair(instr.mint, umi);
+  const destKps = await keyStore.getKeypair(instr.dest, umi);
 
   console.log('transferNft()', 'attempting transfer...');
 
@@ -225,10 +226,10 @@ export async function transferToken(instr: ITransferTokenInstr) {
 export async function burnToken(instr: IBurnTokenInstr) {
   const umi = buildUmi();
 
-  const ownerKps = keyStore.getKeypair(instr.owner, umi);
+  const ownerKps = await keyStore.getKeypair(instr.owner, umi);
   umi.use(keypairIdentity(ownerKps.signer));
 
-  const mintKps = keyStore.getKeypair(instr.mint, umi);
+  const mintKps = await keyStore.getKeypair(instr.mint, umi);
 
   await burnTokenCore(umi,
     mintKps.umiKp.publicKey,
@@ -241,7 +242,7 @@ export async function burnToken(instr: IBurnTokenInstr) {
 
 export async function memo(instr: IMemoInstr) {
   const umi = buildUmi();
-  const sender = keyStore.getKeypair(instr.sender, umi);
+  const sender = await keyStore.getKeypair(instr.sender, umi);
 
   const transaction = new Transaction().add({
     keys: [{ pubkey: sender.w3Kp.publicKey, isSigner: true, isWritable: false }],

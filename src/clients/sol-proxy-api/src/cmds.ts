@@ -13,11 +13,11 @@ import {
   IMemoInstr
 } from './types';
 import { createAcc, transferToken, transferSol, burnToken, mintTokens, mintToken, memo } from './core';
-import { Subscriber } from './listeners';
+import { ISubStore, Subscriber } from './listeners';
 import { HttpClient } from './http.client';
-import { SubStateStore } from './subscribers.statestore';
+import { createSubStore } from './factories';
 
-const subStore = new SubStateStore();
+const subStore: ISubStore = createSubStore();
 const httpClient = new HttpClient();
 
 export const procTransferSolCmd = async (req: IReq<ITransferSolInstr>, res: Response) => {
