@@ -10,9 +10,9 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, writeKeypairToFile } from './utls';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, uint8ArrayToStr, writeKeypairToFile } from './utls';
 import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
-import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT } from './consts';
+import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT, DEFAULT_ACC_SPACE_BYTES } from './consts';
 import { createKeyStore } from './factories';
 import { IKeyStore } from './keys';
 
@@ -141,7 +141,7 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
 
   umi.use(keypairIdentity(payerKps.signer));
 
-  const space = 100; // Size of the account in bytes
+  const space = instr.spaceBytes || DEFAULT_ACC_SPACE_BYTES;
   const lamports = await connection.getMinimumBalanceForRentExemption(space);
   console.log(`Rent-exempt minimum balance: ${lamports} lamports`);
 
@@ -156,7 +156,7 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
     await transferSolCore(umi, payerKps.signer, umiKp.publicKey, lamports);
   }
 
-  return ({ pk: acc.publicKey.toBase58() } as IKeys);
+  return ({ pk: acc.publicKey.toBase58(), sk: uint8ArrayToStr(acc.secretKey) } as IKeys);
 }
 
 export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {

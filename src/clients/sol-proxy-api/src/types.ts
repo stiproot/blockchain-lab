@@ -14,6 +14,7 @@ export interface ICmd {
 
 export interface IKeys {
   pk: string;
+  sk: string | null;
 }
 
 export interface IInstr {
@@ -56,6 +57,7 @@ export interface IBurnTokenInstr extends IInstr {
 export interface ICreateAccInstr extends IInstr {
   payer: IKeys;
   fundAcc: boolean;
+  spaceBytes: number | null;
 }
 
 export interface ISubscribeAccInstr extends IInstr {
