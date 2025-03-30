@@ -1,5 +1,5 @@
-import { ISubscriber, ISubStore, Subscriber } from './subscribers';
-import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from './types';
+import { Subscriber } from './subscribers';
+import { ISubscribeAccInstr, ISubscribeEvt, ISubscriber, ISubStore, IUnsubscribeAccInstr } from './types';
 import { HttpClient } from './http.client';
 
 require("dotenv").config();

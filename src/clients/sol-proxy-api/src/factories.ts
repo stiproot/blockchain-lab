@@ -1,9 +1,8 @@
 import { KeyFileStore } from './key.filestore';
 import { KeyStateStore } from './key.statestore';
-import { IKeyStore } from './keys';
-import { ISubStore } from './subscribers';
 import { SubFileStore } from './subscribers.filestore';
 import { SubStateStore } from './subscribers.statestore';
+import { IKeyStore, ISubStore } from './types';
 
 require("dotenv").config();
 

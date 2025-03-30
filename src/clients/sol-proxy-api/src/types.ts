@@ -1,3 +1,7 @@
+import {
+  Keypair as Web3Keypair
+} from '@solana/web3.js';
+import { KeypairSigner, Umi, Keypair as UmiKeypair } from '@metaplex-foundation/umi';
 import { Request } from 'express';
 
 export interface IReq<T> extends Request {
@@ -73,9 +77,13 @@ export interface IUnsubscribeAccInstr extends IInstr {
 }
 
 export interface ISubscribeEvt {
-  accountPk: string;
   senderPk: string;
+  accountPk: string;
   amtLamports: number;
+  blockTime: number | null | undefined;
+  feeLamports: number | undefined;
+  computationalUnitsConsumed: number | undefined;
+  signature: string;
   extId: number | null;
 }
 
@@ -87,4 +95,34 @@ export interface IMemoInstr extends IInstr {
 export enum KeyType {
   WALLET,
   TOKEN,
+}
+
+export interface IKeypairHandle {
+  w3Kp: Web3Keypair;
+  umiKp: UmiKeypair;
+  signer: KeypairSigner;
+}
+
+export interface IKeyStore {
+  getKeypair(pubKey: IKeys, umi: Umi): Promise<IKeypairHandle>;
+  loadWallets(): Promise<void>;
+}
+
+export interface IKeyStoreEntry {
+  name: string;
+  pk: string;
+  sk: string;
+}
+
+export interface ISubscriber {
+  subscriptionId: number | null;
+  start(): ISubscriber;
+  stop(): void;
+}
+
+export interface ISubStore {
+  loadSubs(): Promise<void>;
+  getSub(key: string): ISubscriber | null;
+  addSub(instr: ISubscribeAccInstr, sub: ISubscriber): Promise<void>;
+  removeSub(instr: IUnsubscribeAccInstr): void;
 }

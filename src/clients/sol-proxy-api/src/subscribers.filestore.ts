@@ -1,9 +1,10 @@
 import path from 'path';
-import { ISubscriber, ISubStore, Subscriber } from './subscribers';
+import { ISubscriber, ISubStore } from './types';
 import { cfgBaseDir, readFileContent } from './utls';
 import { fs } from 'mz';
 import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from './types';
 import { HttpClient } from './http.client';
+import { Subscriber } from './subscribers';
 
 require("dotenv").config();
 

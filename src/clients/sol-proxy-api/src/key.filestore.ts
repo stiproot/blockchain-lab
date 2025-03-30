@@ -1,8 +1,7 @@
 import { createUmiKeypairFromSecretKey, buildTokenBasePath, buildWalletBasePath, loadWalletKeypairFromFile, loadTokenKeypairFromFile } from './utls';
 import { createSignerFromKeypair, Umi } from '@metaplex-foundation/umi';
-import { IKeys } from './types';
+import { IKeypairHandle, IKeys, IKeyStore } from './types';
 import { fs } from 'mz';
-import { IKeypairHandle, IKeyStore } from './keys';
 
 require("dotenv").config();
 

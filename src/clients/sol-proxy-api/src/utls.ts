@@ -4,6 +4,7 @@ import {
     Keypair as Web3Keypair,
     Cluster,
     PublicKey,
+    VersionedTransactionResponse,
 } from '@solana/web3.js';
 import { Keypair as UmiKeypair, Umi, createSignerFromKeypair, KeypairSigner } from '@metaplex-foundation/umi';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
@@ -13,7 +14,7 @@ import os from 'os';
 import path from 'path';
 import yaml from 'yaml';
 import bs58 from 'bs58';
-import { IKeys, KeyType } from './types';
+import { IKeys, ISubscribeEvt, KeyType } from './types';
 import { DEFAULT_NFT_URL, DEFAULT_TOURNAMENT_CFG, MEMO_PROGRAM_ID } from './consts';
 
 const SOL_CLI_CONFIG_PATH = path.resolve(
@@ -140,4 +141,27 @@ export function writeKeypairToFile(secretKey: Uint8Array, keyType: KeyType = Key
     const secretKeyStr = JSON.stringify(Array.from(secretKey));
 
     fs.writeFileSync(filePath, secretKeyStr, { encoding: "utf-8" });
+}
+
+export function mapEvtFromTx(tx: VersionedTransactionResponse,): ISubscribeEvt {
+    const sender = tx.transaction.message.staticAccountKeys[0].toBase58();
+    const to = tx.transaction.message.staticAccountKeys[1].toBase58();
+
+    let amt = 0;
+
+    for (let i = 0; i < tx.meta!.preBalances.length; i++) {
+        amt += (tx.meta!.preBalances[i] - tx.meta!.postBalances[i]);
+    }
+
+    let evt = {
+        senderPk: sender,
+        accountPk: to,
+        amtLamports: amt,
+        blockTime: tx.blockTime,
+        feeLamports: tx.meta?.fee,
+        computationalUnitsConsumed: tx.meta?.computeUnitsConsumed,
+        signature: tx.transaction.signatures[0],
+    } as ISubscribeEvt;
+
+    return evt;
 }

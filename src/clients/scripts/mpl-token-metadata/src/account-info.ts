@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, VersionedTransactionResponse } from "@solana/web3.js";
 import { createConn } from "./utls";
 
 const connection = createConn();
@@ -21,7 +21,7 @@ async function logAccTransactions() {
   for (const sig of signatures) {
     const txid = sig.signature;
 
-    const tx = await connection.getTransaction(txid, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+    const tx: VersionedTransactionResponse | null = await connection.getTransaction(txid, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
     if (!tx || !tx.transaction) {
       console.log(`No transaction found with txid: ${txid}`);
       continue;

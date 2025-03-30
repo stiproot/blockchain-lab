@@ -1,21 +1,9 @@
 import { Connection, PublicKey } from "@solana/web3.js";
-import { createConn } from "./utls";
-import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from "./types";
+import { createConn, mapEvtFromTx } from "./utls";
+import { ISubscribeEvt, ISubscriber } from "./types";
 
 require("dotenv").config();
 
-export interface ISubscriber {
-  subscriptionId: number | null;
-  start(): ISubscriber;
-  stop(): void;
-}
-
-export interface ISubStore {
-  loadSubs(): Promise<void>;
-  getSub(key: string): ISubscriber | null;
-  addSub(instr: ISubscribeAccInstr, sub: ISubscriber): Promise<void>;
-  removeSub(instr: IUnsubscribeAccInstr): void;
-}
 
 export class Subscriber implements ISubscriber {
   private readonly _account: PublicKey;
@@ -40,28 +28,25 @@ export class Subscriber implements ISubscriber {
 
       const signatures = await this._connection.getSignaturesForAddress(this._account, { limit: 1 });
       if (!signatures.length) {
-        return console.log("No recent transactions found.");
+        return console.warn("No recent transactions found.");
       }
 
       const txid = signatures[0].signature;
       const tx = await this._connection.getTransaction(txid, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
-      if (tx && tx.transaction) {
-        const sender = tx.transaction.message.staticAccountKeys[0].toBase58();
-        console.log(`PRE-BALANCES: ${tx.meta?.preBalances}`, `POST-BALANCES: ${tx.meta?.postBalances}`);
-        // const amount = (tx.meta!.preBalances[0] - tx.meta!.postBalances[0]) / 1e9; // Convert lamports to SOL
-        const amount: number = tx.meta!.preBalances[0] - tx.meta!.postBalances[0];
-
-        console.log(`SOL received! Sender: ${sender}, Amount: ${amount} Lamports, TxID: ${txid}`);
-
-        if (this._fn) {
-          await this._fn({
-            senderPk: sender,
-            amtLamports: amount,
-            accountPk: this._account.toBase58()
-          } as ISubscribeEvt);
-        }
+      if (!tx || !tx.transaction) {
+        return console.warn(`No transactions found with txid ${txid}.`);
       }
+
+      let evt: ISubscribeEvt = mapEvtFromTx(tx);
+
+      if (!this._fn) {
+        return console.warn("No webhook callback function provided.");
+      }
+
+      console.debug(`SOL received! Sender: ${evt.senderPk}, Amount: ${evt.amtLamports} Lamports, TxID: ${txid}`);
+      await this._fn(evt);
     });
+
     return this;
   }
 

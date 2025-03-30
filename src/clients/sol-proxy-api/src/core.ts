@@ -11,11 +11,10 @@ import {
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
 import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, uint8ArrayToStr } from './utls';
-import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, ISubscribeAccInstr, ISubscribeEvt, IToken, ITransferSolInstr, ITransferTokenInstr, IUnsubscribeAccInstr } from './types';
+import { IBurnTokenInstr, ICreateAccInstr, IKeys, IKeyStore, IMemoInstr, IMintTokenInstr, IMintTokensInstr, ISubscribeAccInstr, ISubscribeEvt, ISubStore, IToken, ITransferSolInstr, ITransferTokenInstr, IUnsubscribeAccInstr } from './types';
 import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_ACC_SPACE_BYTES } from './consts';
 import { createKeyStore, createSubStore } from './factories';
-import { IKeyStore } from './keys';
-import { ISubStore, Subscriber } from './subscribers';
+import { Subscriber } from './subscribers';
 import { HttpClient } from './http.client';
 
 const keyStore: IKeyStore = createKeyStore();

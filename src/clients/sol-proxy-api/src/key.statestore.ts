@@ -3,8 +3,7 @@ import {
   Keypair as Web3Keypair,
 } from '@solana/web3.js';
 import { createSignerFromKeypair, Umi } from '@metaplex-foundation/umi';
-import { IKeys } from './types';
-import { IKeypairHandle, IKeyStore, IKeyStoreEntry } from './keys';
+import { IKeypairHandle, IKeys, IKeyStore, IKeyStoreEntry } from './types';
 import { HttpClient } from './http.client';
 
 require("dotenv").config();
