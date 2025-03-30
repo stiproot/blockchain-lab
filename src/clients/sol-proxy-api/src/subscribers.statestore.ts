@@ -1,4 +1,4 @@
-import { ISubscriber, ISubStore, Subscriber } from './listeners';
+import { ISubscriber, ISubStore, Subscriber } from './subscribers';
 import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from './types';
 import { HttpClient } from './http.client';
 
@@ -28,7 +28,7 @@ export class SubStateStore implements ISubStore {
       };
 
       const sub = new Subscriber(i.accountPk, fn);
-      this.addSub(i, sub.start());
+      // await this.addSub(i, sub.start());
     }
   }
 

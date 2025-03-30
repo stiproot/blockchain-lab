@@ -1,4 +1,4 @@
-import { generateSigner, keypairIdentity, KeypairSigner, lamports, percentAmount, PublicKey, Umi } from '@metaplex-foundation/umi';
+import { generateSigner, keypairIdentity, KeypairSigner, lamports, percentAmount, publicKey, PublicKey, Umi } from '@metaplex-foundation/umi';
 import { burnV1, createNft, TokenStandard, transferV1 } from '@metaplex-foundation/mpl-token-metadata';
 import {
   PublicKey as Web3PublicKey,
@@ -10,13 +10,17 @@ import {
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { transferSol as mplTransferSol } from '@metaplex-foundation/mpl-toolbox';
-import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, uint8ArrayToStr, writeKeypairToFile } from './utls';
-import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, IToken, ITransferSolInstr, ITransferTokenInstr } from './types';
-import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_LAMPORTS_TRANSFER_AMT, DEFAULT_ACC_SPACE_BYTES } from './consts';
-import { createKeyStore } from './factories';
+import { buildUmi, createConn, createUmiKeypairFromSecretKey, logTransactionLink, MEMO_PROGRAM_PUBKEY, uint8ArrayToStr } from './utls';
+import { IBurnTokenInstr, ICreateAccInstr, IKeys, IMemoInstr, IMintTokenInstr, IMintTokensInstr, ISubscribeAccInstr, ISubscribeEvt, IToken, ITransferSolInstr, ITransferTokenInstr, IUnsubscribeAccInstr } from './types';
+import { DEFAULT_SELLER_FEE_BASIS_POINTS_AMT, DEFAULT_SOL_FUND_AMT, DEFAULT_ACC_SPACE_BYTES } from './consts';
+import { createKeyStore, createSubStore } from './factories';
 import { IKeyStore } from './keys';
+import { ISubStore, Subscriber } from './subscribers';
+import { HttpClient } from './http.client';
 
 const keyStore: IKeyStore = createKeyStore();
+const subStore: ISubStore = createSubStore();
+const httpClient = new HttpClient();
 
 
 async function mintTokenCore(
@@ -48,13 +52,15 @@ export async function transferSolCore(
   umi: Umi,
   sourceSigner: KeypairSigner,
   destPubKey: PublicKey,
-  amt: number = DEFAULT_LAMPORTS_TRANSFER_AMT
+  amtLamports: number
 ) {
   const builder = mplTransferSol(umi, {
     source: sourceSigner,
     destination: destPubKey,
-    amount: lamports(amt),
+    amount: lamports(amtLamports),
   });
+
+  console.log('Attempting transer...');
 
   const { signature } = await builder.sendAndConfirm(umi);
   logTransactionLink('transferSolCore()', signature);
@@ -147,8 +153,8 @@ export async function createAcc(instr: ICreateAccInstr): Promise<IKeys> {
 
   const acc: Web3Keypair = await createAccCore(umi, connection, payerKps.w3Kp, lamports, space);
 
-  writeKeypairToFile(acc.secretKey);
-  await keyStore.loadWallets();
+  // writeKeypairToFile(acc.secretKey);
+  // await keyStore.loadWallets();
 
   if (instr.fundAcc) {
     console.log('setupAccs()', 'funding accounts');
@@ -164,22 +170,17 @@ export async function mintToken(instr: IMintTokenInstr): Promise<IToken> {
   const payerKps = await keyStore.getKeypair(instr.payer, umi);
   umi.use(keypairIdentity(payerKps.signer));
 
-  const ownerKps = await keyStore.getKeypair(instr.owner, umi);
-
   console.log('mintToken()', 'attempting minting...');
   const token = await mintTokenCore(
     umi,
     instr.name,
     instr.uri,
-    ownerKps.umiKp.publicKey,
+    publicKey(instr.owner.pk),
   );
-
-  // writeKeypairToFile(token.secretKey, KeyType.TOKEN);
-  // await keyStore.loadTokens();
 
   const resp = {
     mint: { pk: token.publicKey.toString() } as IKeys,
-    owner: { pk: ownerKps.umiKp.publicKey.toString() } as IKeys
+    owner: { pk: instr.owner.pk } as IKeys
   } as IToken;
 
   return resp;
@@ -195,9 +196,7 @@ export async function transferSol(instr: ITransferSolInstr) {
   const srcKps = await keyStore.getKeypair(instr.source, umi);
   umi.use(keypairIdentity(srcKps.signer));
 
-  const destKps = await keyStore.getKeypair(instr.dest, umi);
-
-  await transferSolCore(umi, srcKps.signer, destKps.umiKp.publicKey, instr.amount);
+  await transferSolCore(umi, srcKps.signer, publicKey(instr.dest.pk), instr.amtLamports);
 
   return {};
 }
@@ -255,4 +254,20 @@ export async function memo(instr: IMemoInstr) {
   logTransactionLink('memo', txid);
 
   return {};
+}
+
+export async function registerAccSub(instr: ISubscribeAccInstr): Promise<void> {
+  const fn = async (evt: ISubscribeEvt) => {
+    evt.extId = instr.extId;
+    console.debug('sub-evt', evt);
+    await httpClient.post(instr.webhookUrl, evt);
+  };
+
+  const sub = new Subscriber(instr.accountPk, fn);
+  await subStore.addSub(instr, sub.start());
+}
+
+export function unregisterAccSub(instr: IUnsubscribeAccInstr): void {
+  subStore.getSub(instr.accountPk)?.stop();
+  subStore.removeSub(instr);
 }

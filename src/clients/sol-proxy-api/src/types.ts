@@ -40,7 +40,7 @@ export interface IMintTokensInstr extends IInstr {
 export interface ITransferSolInstr extends IInstr {
   source: IKeys;
   dest: IKeys;
-  amount: number;
+  amtLamports: number;
 }
 
 export interface ITransferTokenInstr extends IInstr {

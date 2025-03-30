@@ -1,5 +1,5 @@
 import path from 'path';
-import { ISubscriber, ISubStore, Subscriber } from './listeners';
+import { ISubscriber, ISubStore, Subscriber } from './subscribers';
 import { cfgBaseDir, readFileContent } from './utls';
 import { fs } from 'mz';
 import { ISubscribeAccInstr, ISubscribeEvt, IUnsubscribeAccInstr } from './types';
@@ -26,7 +26,6 @@ export class SubFileStore implements ISubStore {
   async loadSubs(): Promise<void> {
     const instrs = await readSubsFromDir();
     for (const i of instrs) {
-
       const fn = async (evt: ISubscribeEvt) => {
         evt.extId = i.extId;
         console.log('sub-evt', evt);
@@ -34,7 +33,7 @@ export class SubFileStore implements ISubStore {
       };
 
       const sub = new Subscriber(i.accountPk, fn);
-      this.addSub(i, sub.start());
+      await this.addSub(i, sub.start());
     }
   }
 
@@ -45,7 +44,7 @@ export class SubFileStore implements ISubStore {
     return null;
   }
 
-  addSub(instr: ISubscribeAccInstr, sub: ISubscriber): void {
+  async addSub(instr: ISubscribeAccInstr, sub: ISubscriber): Promise<void> {
     writeSubToFile(instr);
     this._memoryStore[instr.accountPk] = sub;
   }
