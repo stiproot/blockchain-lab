@@ -147,11 +147,7 @@ export function mapEvtFromTx(tx: VersionedTransactionResponse,): ISubscribeEvt {
     const sender = tx.transaction.message.staticAccountKeys[0].toBase58();
     const to = tx.transaction.message.staticAccountKeys[1].toBase58();
 
-    let amt = 0;
-
-    for (let i = 0; i < tx.meta!.preBalances.length; i++) {
-        amt += (tx.meta!.preBalances[i] - tx.meta!.postBalances[i]);
-    }
+    let amt = tx.meta!.preBalances[0] - tx.meta!.postBalances[0] - tx.meta!.fee;
 
     let evt = {
         senderPk: sender,

@@ -28,7 +28,7 @@ export class SubStateStore implements ISubStore {
       };
 
       const sub = new Subscriber(i.accountPk, fn);
-      await this.addSub(i, sub.start());
+      // await this.addSub(i, sub.start());
     }
   }
 

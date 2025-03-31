@@ -38,6 +38,8 @@ export class Subscriber implements ISubscriber {
       }
 
       let evt: ISubscribeEvt = mapEvtFromTx(tx);
+      console.log('tx:', JSON.stringify(tx));
+      console.log('evt:', JSON.stringify(evt));
 
       if (!this._fn) {
         return console.warn("No webhook callback function provided.");
