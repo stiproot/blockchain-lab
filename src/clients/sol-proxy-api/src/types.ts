@@ -69,6 +69,7 @@ export interface ISubscribeAccInstr extends IInstr {
   extId: number;
   status: number;
   webhookUrl: string;
+  persistSubToStore: boolean;
   expirationTimestamp: number | null;
 }
 

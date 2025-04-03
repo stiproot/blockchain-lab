@@ -40,7 +40,10 @@ export class SubStateStore implements ISubStore {
   }
 
   async addSub(instr: ISubscribeAccInstr, sub: ISubscriber): Promise<void> {
-    await writeSubToStateStore(instr);
+    if (instr.persistSubToStore) {
+      await writeSubToStateStore(instr);
+    }
+
     this._memoryStore[instr.accountPk] = sub;
   }
 
